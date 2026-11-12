@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#1f4fd8"><title>Campanhas · Ateliê</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#f5f6f8;--fg:#1b1f24;--card:#fff;--mut:#667085;--bd:#d5d9e0;--pri:#1f4fd8;--ok:#117a45;--warn:#b54708;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111418;--fg:#eceff3;--card:#1b2027;--mut:#9aa4b2;--bd:#2f3743;--pri:#6b8cff;--ok:#4cc38a;--warn:#f0a35e;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#111418;--fg:#eceff3;--card:#1b2027;--mut:#9aa4b2;--bd:#2f3743;--pri:#6b8cff;--ok:#4cc38a;--warn:#f0a35e;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--fg);font:16px/1.4 Arial,Helvetica,sans-serif;max-width:640px;margin:0 auto;padding:12px}
+h1{font-size:18px;margin:4px 0 10px}.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:10px;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;font-size:14px}
+.tabs button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+input,select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--fg);font-size:16px}
+.btn{width:100%;padding:13px;border:0;border-radius:8px;background:var(--pri);color:#fff;font-size:16px;font-weight:bold;margin-top:10px}
+.btn.sec{background:transparent;color:var(--pri);border:1px solid var(--pri)}.btn.sm{width:auto;padding:6px 10px;font-size:13px;margin:0}
+#reader{width:100%;margin-top:8px}.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd)}
+.row:first-child{border-top:0}.mut{color:var(--mut);font-size:13px}.cnt{background:var(--pri);color:#fff;border-radius:99px;padding:1px 9px;font-size:13px}
+#msg{min-height:22px;font-size:14px;margin-top:8px}.ok{color:var(--ok)}.er{color:var(--warn)}.hide{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chips label{display:flex;align-items:center;gap:6px;margin:0;padding:9px 11px;border:1px solid var(--bd);border-radius:8px;color:var(--fg);font-size:15px;background:var(--bg)}
+.chips input{width:auto;padding:0;margin:0}.tabs button{font-size:13px;padding:9px 4px}.inf{margin-top:8px;font-size:14px}
+.tag{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:2px 7px;margin:2px;font-size:13px}.x{border:0;background:none;color:var(--warn);font-size:16px}
+</style></head><body>
+<h1>Campanhas · Ateliê</h1>
+<div class="mut" id="mode"></div>
+<div class="card"><label style="margin-top:0">Matrícula do colaborador</label><input id="mat" inputmode="numeric" placeholder="Ex.: 172632"></div>
+<div class="tabs"><button data-t="tri" class="on">Triagem</button><button data-t="chk">Checklist</button><button data-t="lst">Listas</button><button data-t="adm">Admin</button></div>
+<div id="reader" class="hide card"></div>
+
+<section id="tri"><div class="card">
+ <label style="margin-top:0">VIS (bipe ou digite)</label><input id="vis1" autocapitalize="characters" autocomplete="off">
+ <button class="btn sec" data-cam="vis1">Ler com a câmera</button><div class="inf" id="inf1"></div>
+ <label>Campanha que falta</label><div class="chips" id="cp"></div>
+ <label>Local do carro</label><select id="loc"></select>
+ <label class="chips" style="display:block"><span style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="keep" style="width:auto">Manter campanhas marcadas para o próximo carro</span></label>
+ <button class="btn" id="bFalta">Registrar falta de campanha</button>
+ <button class="btn sec" id="bRes">Campanha resolvida (remover as marcadas)</button><div id="msg1"></div>
+</div></section>
+
+<section id="chk" class="hide"><div class="card">
+ <label style="margin-top:0">VIS (bipe ou digite)</label><input id="vis2" autocapitalize="characters" autocomplete="off">
+ <button class="btn sec" data-cam="vis2">Ler com a câmera</button><div class="inf" id="inf2"></div>
+ <label>O que foi atualizado</label><div class="chips" id="ck"></div>
+ <label>Modelo</label><div class="chips"><label><input type="radio" name="mod" value="MID">MID</label><label><input type="radio" name="mod" value="HIGH">HIGH</label></div>
+ <label class="chips" style="display:block"><span style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fin" checked style="width:auto">Carro finalizado (enviar para LAST MILE)</span></label>
+ <button class="btn" id="bChk">Salvar checklist</button><div id="msg2"></div>
+</div></section>
+
+<section id="lst" class="hide">
+ <div class="card"><select id="view"><option value="camp">Pendências por campanha</option><option value="local">Pendências por local</option><option value="last">LAST MILE</option></select>
+ <input id="q" placeholder="Buscar VIS (mostra o histórico)" style="margin-top:8px"></div><div id="out"></div>
+</section>
+
+<section id="adm" class="hide">
+ <div class="card" id="login"><label style="margin-top:0">PIN do administrador</label><input id="pin" type="password" inputmode="numeric"><button class="btn" id="bPin">Entrar</button></div>
+ <div id="admBox" class="hide"></div><div id="msg3" class="er"></div>
+</section>
+
+<script>
+/* ===== Cole aqui a URL do Apps Script (termina em /exec) ===== */
+const API_URL="https://script.google.com/macros/s/AKfycbyWvUNdKZ_gHnGXDe2AjrXkuo3R9-v0qMzbcaGazuRKjtmqJcIM-a3hoe6_IBLlrjkn5w/exec";
+/* ============================================================ */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const key=v=>String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const split=s=>String(s||"").split(/\s*,\s*/).filter(Boolean);
+const fmt=t=>{try{return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}catch(e){return t}};
+const ST={pendente:"Pendente",last_mile:"LAST MILE",liberado:"Liberado",em_atendimento:"Em atendimento"};
+let cfg={campanha:[],local:[],checklist:[]},cars={},checks=[],scanner=null,tgt="",pin="",cfgSig="",busy=false;
+try{$("mat").value=localStorage.getItem("mat")||""}catch(e){}
+$("mat").oninput=()=>{try{localStorage.setItem("mat",$("mat").value)}catch(e){}};
+const mat=()=>$("mat").value.replace(/\D/g,"");
+const sel=id=>[...document.querySelectorAll("#"+id+" input:checked")].map(i=>i.value);
+const chips=(id,l)=>$(id).innerHTML=l.map(v=>`<label><input type="checkbox" value="${esc(v)}">${esc(v)}</label>`).join("");
+const msg=(id,t,c)=>{$(id).textContent=t;$(id).className=c||""};
+
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));
+ ["tri","chk","lst","adm"].forEach(t=>$(t).classList.toggle("hide",t!==b.dataset.t));stopScan()});
+
+async function post(b){
+ if(!/^https:\/\/script\.google\.com\//.test(API_URL))throw new Error("API_URL não configurada");
+ const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(b)});
+ const j=await r.json();if(!j.ok)throw new Error(j.error||"erro");await load();return j}
+async function load(){
+ if(!/^https:\/\/script\.google\.com\//.test(API_URL)){$("mode").textContent="Configure a API_URL no index.html (veja o LEIA-ME).";return}
+ try{const j=await(await fetch(API_URL)).json();cars={};j.cars.forEach(c=>cars[c.vis]=c);checks=j.checks||[];
+  const sig=JSON.stringify(j.config);cfg=j.config;
+  if(sig!==cfgSig){cfgSig=sig;chips("cp",cfg.campanha);chips("ck",cfg.checklist);$("loc").innerHTML=cfg.local.map(l=>`<option>${esc(l)}</option>`).join("");
+   try{const l=localStorage.getItem("loc");if(l)$("loc").value=l}catch(e){}renderAdm()}
+  $("mode").textContent="Conectado à planilha · "+new Date().toLocaleTimeString("pt-BR",{timeStyle:"short"});info("vis1","inf1");info("vis2","inf2");renderList();
+ }catch(e){$("mode").textContent="Sem conexão com a planilha. Tentando de novo…"}}
+$("loc").onchange=()=>{try{localStorage.setItem("loc",$("loc").value)}catch(e){}};
+
+function info(i,o){const v=key($(i).value),c=cars[v];
+ $(o).innerHTML=!v?"":!c?`<b>${esc(v)}</b> · carro novo (sem registro)`:
+ `<b>${esc(v)}</b> · ${esc(ST[c.status]||c.status)}${split(c.pendencias).length?" · <span class='er'>Falta: "+esc(split(c.pendencias).join(", "))+"</span>":""}${c.local?" · "+esc(c.local):""}`}
+["vis1","vis2"].forEach((i,n)=>{const o=n?"inf2":"inf1";$(i).addEventListener("input",()=>info(i,o));
+ $(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$(i).value=key($(i).value);info(i,o)}})});
+
+async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide")}
+document.querySelectorAll("[data-cam]").forEach(b=>b.onclick=async()=>{
+ if(scanner){await stopScan();return}
+ if(!window.Html5Qrcode){alert("Leitor de câmera indisponível. Digite o VIS.");return}
+ tgt=b.dataset.cam;$("reader").classList.remove("hide");scanner=new Html5Qrcode("reader");
+ try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:160}},async t=>{
+  $(tgt).value=key(t);await stopScan();info(tgt,tgt==="vis1"?"inf1":"inf2")},()=>{})}
+ catch(e){await stopScan();alert("Não foi possível abrir a câmera. Digite o VIS ou use um leitor.")}});
+
+async function run(fn,m){if(busy)return;busy=true;try{await fn()}catch(e){msg(m,e.message,"er")}busy=false}
+function chk1(vis,m){if(!vis){msg(m,"Informe o VIS.","er");return 0}if(!mat()){msg(m,"Informe a matrícula.","er");return 0}return 1}
+$("bFalta").onclick=()=>run(async()=>{const v=key($("vis1").value),a=sel("cp");if(!chk1(v,"msg1"))return;
+ if(!a.length){msg("msg1","Marque ao menos uma campanha que falta.","er");return}
+ await post({action:"pend",vis:v,matricula:mat(),add:a,local:$("loc").value});
+ msg("msg1",`${v}: falta ${a.join(", ")} · ${$("loc").value}`,"ok");$("vis1").value="";$("inf1").innerHTML="";
+ if(!$("keep").checked)chips("cp",cfg.campanha);$("vis1").focus()},"msg1");
+$("bRes").onclick=()=>run(async()=>{const v=key($("vis1").value),a=sel("cp");if(!chk1(v,"msg1"))return;
+ if(!a.length){msg("msg1","Marque as campanhas que foram resolvidas.","er");return}
+ await post({action:"pend",vis:v,matricula:mat(),remove:a});
+ msg("msg1",`${v}: resolvido ${a.join(", ")}`,"ok");$("vis1").value="";$("inf1").innerHTML="";chips("cp",cfg.campanha)},"msg1");
+$("bChk").onclick=()=>run(async()=>{const v=key($("vis2").value);if(!chk1(v,"msg2"))return;
+ const it=sel("ck"),m=document.querySelector("input[name=mod]:checked");
+ if(!it.length&&!m&&!$("fin").checked){msg("msg2","Marque o que foi atualizado.","er");return}
+ await post({action:"check",vis:v,matricula:mat(),itens:it,modelo:m?m.value:"",finalizou:$("fin").checked});
+ msg("msg2",`${v} salvo${$("fin").checked?" → LAST MILE":""}`,"ok");$("vis2").value="";$("inf2").innerHTML="";chips("ck",cfg.checklist);
+ document.querySelectorAll("input[name=mod]").forEach(x=>x.checked=false);$("vis2").focus()},"msg2");
+
+function renderList(){
+ const q=key($("q").value),v=$("view").value,all=Object.values(cars);let h="";
+ if(q){const r=all.filter(c=>c.vis.includes(q)).slice(0,10);
+  h=r.map(c=>`<div class="card"><b>${esc(c.vis)}</b> · ${esc(ST[c.status]||c.status)}${c.local?" · "+esc(c.local):""}<div class="mut">${split(c.pendencias).length?"Falta: "+esc(split(c.pendencias).join(", "))+" · ":""}${c.modelo?esc(c.modelo)+" · ":""}${fmt(c.atualizado)}</div>`+
+   checks.filter(x=>x.vis===c.vis).map(x=>`<div class="row"><div>${esc(x.itens)||"—"}${x.modelo?" · "+esc(x.modelo):""}<div class="mut">matrícula ${esc(x.matricula)}</div></div><span class="mut">${fmt(x.ts)}</span></div>`).join("")+`</div>`).join("")||'<div class="card mut">Nenhum carro encontrado.</div>'}
+ else if(v==="camp"){const m={};cfg.campanha.forEach(c=>m[c]=[]);
+  all.filter(c=>c.status==="pendente").forEach(c=>split(c.pendencias).forEach(p=>(m[p]=m[p]||[]).push(c)));
+  h=Object.keys(m).map(k=>`<div class="card"><div class="row"><b>${esc(k)}</b><span><span class="cnt">${m[k].length}</span> <button class="btn sm sec" data-c="${esc(k)}">Copiar VIS</button></span></div>`+
+   m[k].map(c=>`<div class="row"><b>${esc(c.vis)}</b><span class="mut">${esc(c.local)}</span></div>`).join("")+`</div>`).join("")}
+ else if(v==="local"){const m={};cfg.local.forEach(l=>m[l]=[]);
+  all.filter(c=>c.status==="pendente").forEach(c=>(m[c.local]=m[c.local]||[]).push(c));
+  h=Object.keys(m).map(k=>`<div class="card"><div class="row"><b>${esc(k||"Sem local")}</b><span class="cnt">${m[k].length}</span></div>`+
+   m[k].map(c=>`<div class="row"><b>${esc(c.vis)}</b><span class="mut">${esc(split(c.pendencias).join(", "))}</span></div>`).join("")+`</div>`).join("")}
+ else{const r=all.filter(c=>c.status==="last_mile").sort((a,b)=>b.atualizado.localeCompare(a.atualizado));
+  h=`<div class="card"><div class="row"><b>LAST MILE</b><span class="cnt">${r.length}</span></div>`+r.map(c=>`<div class="row"><div><b>${esc(c.vis)}</b><div class="mut">${esc(c.modelo)}${c.modelo?" · ":""}matrícula ${esc(c.matricula)} · ${fmt(c.atualizado)}</div></div><button class="btn sm sec" data-s="${esc(c.vis)}">Saiu</button></div>`).join("")+`</div>`}
+ $("out").innerHTML=h;
+ document.querySelectorAll("[data-c]").forEach(b=>b.onclick=async()=>{const l=all.filter(c=>c.status==="pendente"&&split(c.pendencias).includes(b.dataset.c)).map(c=>c.vis).join("\n");
+  try{await navigator.clipboard.writeText(l);b.textContent="Copiado"}catch(e){prompt("Copie:",l)}});
+ document.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>run(async()=>{if(!mat()){alert("Informe a matrícula no topo.");return}
+  await post({action:"status",vis:b.dataset.s,matricula:mat(),status:"liberado"})},"msg1"))}
+$("view").onchange=renderList;$("q").oninput=renderList;
+
+const TIPOS=[["campanha","Campanhas (triagem)"],["local","Locais"],["checklist","Itens do checklist"]];
+function renderAdm(){
+ $("admBox").innerHTML=TIPOS.map(([t,n])=>`<div class="card"><b>${n}</b><div style="margin:6px 0">${cfg[t].map(v=>`<span class="tag">${esc(v)} <button class="x" data-d="${t}|${esc(v)}">×</button></span>`).join("")}</div>
+  <div style="display:flex;gap:6px"><input id="n_${t}" placeholder="Novo item"><button class="btn sm" data-a="${t}">Adicionar</button></div></div>`).join("");
+ document.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>adm(b.dataset.a,"add",$("n_"+b.dataset.a).value));
+ document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const[t,v]=b.dataset.d.split("|");if(confirm("Remover "+v+"?"))adm(t,"remove",v)})}
+function adm(tipo,op,valor){run(async()=>{await post({action:"admin",pin,tipo,op,valor});msg("msg3","")},"msg3")}
+$("bPin").onclick=()=>{pin=$("pin").value;if(!pin)return;$("login").classList.add("hide");$("admBox").classList.remove("hide")};
+
+load();setInterval(()=>{if(!document.hidden&&!busy)load()},20000);
+</script></body></html>

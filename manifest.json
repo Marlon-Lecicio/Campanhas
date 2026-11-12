@@ -1,0 +1,9 @@
+{
+  "name": "Campanhas · Ateliê",
+  "short_name": "Campanhas",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1f4fd8",
+  "theme_color": "#1f4fd8",
+  "icons": []
+}
