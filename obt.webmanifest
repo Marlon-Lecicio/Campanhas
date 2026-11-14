@@ -1,0 +1,9 @@
+{
+  "name": "OBT CONTROL",
+  "short_name": "OBT CONTROL",
+  "start_url": "./obt.html",
+  "display": "standalone",
+  "background_color": "#071B33",
+  "theme_color": "#071B33",
+  "icons": []
+}

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#071B33"><link rel="manifest" href="obt.webmanifest">
+<title>OBT CONTROL · Gestão Inteligente de Pátio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{--bg:#071B33;--card:#102B50;--sec:#194B78;--lt:#4fc3ff;--ok:#2ecc71;--wn:#f5c542;--bad:#ff5c5c;--free:#3d4b5c;--fg:#eaf2fb;--mut:#92a8c2;--ecn:#7b4fd6;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0;height:100%}body{background:var(--bg);color:var(--fg);font:16px/1.4 Arial,Helvetica,sans-serif;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+header{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border-bottom:2px solid var(--sec);position:sticky;top:0;z-index:5}
+.logo{font-size:22px;font-weight:800;letter-spacing:.5px}.logo span{color:var(--ok)}small{color:var(--mut);display:block;font-size:11px}
+.sp{flex:1}#sync{font-size:12px;color:var(--ok)}#sync.er{color:var(--bad)}
+header input{width:120px}
+#wrap{display:flex;min-height:calc(100% - 58px)}nav{width:200px;background:var(--card);padding:8px;display:flex;flex-direction:column;gap:6px;transition:width .2s;flex-shrink:0}
+nav.c{width:54px}nav.c .t{display:none}nav button{display:flex;align-items:center;gap:10px;padding:12px;border:0;border-radius:10px;background:transparent;color:var(--fg);font-size:15px;text-align:left}
+nav button.on{background:var(--sec);box-shadow:inset 3px 0 var(--lt)}main{flex:1;padding:12px;min-width:0}
+.btn{padding:14px;border:0;border-radius:10px;background:var(--sec);color:var(--fg);font-size:16px;font-weight:bold}.btn.g{background:var(--ok);color:#052}.btn.w{background:var(--wn);color:#321}.btn.r{background:var(--bad);color:#300}
+#burger{background:none;border:0;color:var(--fg);font-size:24px}
+.card{background:var(--card);border:1px solid var(--sec);border-radius:12px;padding:12px;margin-bottom:12px}h2{margin:0 0 8px;font-size:17px}
+input,select{width:100%;padding:12px;border:1px solid var(--sec);border-radius:10px;background:var(--bg);color:var(--fg);font-size:16px}
+label{display:block;font-size:13px;color:var(--mut);margin:8px 0 3px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:12px}.kpi{background:var(--card);border:1px solid var(--sec);border-radius:12px;padding:10px;text-align:center}.kpi b{display:block;font-size:30px}.kpi span{font-size:12px;color:var(--mut)}
+.bar{height:14px;background:var(--free);border-radius:7px;overflow:hidden;margin:3px 0 8px}.bar i{display:block;height:100%;background:var(--lt)}
+.fila{display:flex;gap:4px;align-items:center;margin:4px 0;overflow-x:auto}.fila>b{min-width:54px;font-size:12px;color:var(--mut)}
+.v{min-width:52px;height:50px;border:2px solid transparent;border-radius:8px;background:var(--free);color:var(--fg);font-size:11px;padding:2px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.v b{font-size:13px}.v.o{background:#2f80c8}.v.p{background:var(--wn);color:#321}.v.k{background:var(--ok);color:#052}.v.e{border-color:var(--ecn)}.v.s{outline:3px solid var(--lt)}
+.leg span{display:inline-block;margin-right:10px;font-size:12px}.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:middle}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg button{flex:1;min-width:110px}.seg .on{background:var(--lt);color:#012}
+.row{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--sec)}.mut{color:var(--mut);font-size:13px}.hide{display:none}
+#modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:9;padding:12px}#modal .card{width:100%;max-width:440px;margin:0}
+#msg{margin-top:8px;font-weight:bold}.ok{color:var(--ok)}.er{color:var(--bad)}
+@media(max-width:700px){nav{width:54px}nav .t{display:none}nav:not(.c).open{width:200px}nav.open .t{display:inline}}
+</style></head><body>
+<header><button id="burger">☰</button>
+<svg width="38" height="26" viewBox="0 0 38 26" fill="none" stroke="#4fc3ff" stroke-width="2"><path d="M3 18l3-8c1-2 3-3 5-3h14c2 0 4 1 5 3l3 8v4h-4M3 18v4h4M3 18h32"/><circle cx="11" cy="22" r="3"/><circle cx="27" cy="22" r="3"/></svg>
+<div><div class="logo">OBT <span>CONTROL</span></div><small>Gestão Inteligente de Pátio</small></div><div class="sp"></div>
+<span id="sync">…</span><input id="mat" inputmode="numeric" placeholder="Matrícula"></header>
+<div id="wrap"><nav id="nav"></nav><main>
+<section id="v-dash"></section>
+<section id="v-mapa" class="hide"></section>
+<section id="v-receb" class="hide">
+ <div class="card"><h2>RECEBIMENTO / MOVIMENTAÇÃO</h2>
+  <label style="margin-top:0">1. Setor</label><div class="seg" id="setSeg"></div>
+  <label>2. VIS (câmera ou digitação manual)</label><input id="vis" autocapitalize="characters" autocomplete="off" placeholder="Bipe ou digite o VIS">
+  <button class="btn" style="width:100%;margin-top:8px" id="bCam">📷 Ler VIS com a câmera</button><div id="reader" class="hide" style="margin-top:8px"></div>
+  <div id="recInfo" class="mut" style="margin-top:8px"></div>
+  <label class="chk" id="econBox" style="display:none"><input type="checkbox" id="econ" style="width:auto"> Veículo ECON (chegou direto da fábrica)</label>
+  <label>3. Fila e vaga (toque na vaga livre)</label><div id="pick"></div>
+  <div class="card" style="margin:10px 0 0" id="sum"></div>
+  <button class="btn g" style="width:100%;margin-top:10px" id="bOk">✔ Confirmar registro</button><div id="msg"></div>
+ </div></section>
+<section id="v-cons" class="hide"><div class="card"><input id="q" placeholder="Buscar VIS…" autocapitalize="characters"></div><div id="qOut"></div></section>
+<section id="v-hist" class="hide"><div class="card"><input id="hq" placeholder="Filtrar por VIS…"><select id="ha" style="margin-top:8px"></select></div><div class="card" id="hOut"></div></section>
+<section id="v-adm" class="hide"><div class="card" id="login"><label style="margin-top:0">PIN do administrador</label><input id="pin" type="password" inputmode="numeric"><button class="btn" style="width:100%;margin-top:8px" id="bPin">Entrar</button></div><div id="admBox" class="hide"></div></section>
+</main></div><div id="modal" class="hide"></div>
+<script>
+/* ===== Cole aqui a MESMA URL do Apps Script usada no Campanhas (termina em /exec) ===== */
+const API_URL="https://script.google.com/macros/s/AKfycbyWvUNdKZ_gHnGXDe2AjrXkuo3R9-v0qMzbcaGazuRKjtmqJcIM-a3hoe6_IBLlrjkn5w/exec";
+/* ======================================================================================= */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const key=v=>String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const split=s=>String(s||"").split(/\s*,\s*/).filter(Boolean);
+const fmt=t=>{try{return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}catch(e){return t}};
+const LET="ABCDEFGHIJKLMNOPQRSTUVWXYZ",SET=["Frente Ateliê","Frente Ducha","ECON"];
+const ST={pendente:"Aguardando campanha",last_mile:"LAST MILE (finalizado)",liberado:"Liberado",em_atendimento:"Em processo"};
+let L=[],P={},O={},cars={},checks=[],hist=[],scanner=null,sel={setor:SET[0],vaga:""},filtro="",view="dash",pin="",busy=false,booted=false;
+try{$("mat").value=localStorage.getItem("mat")||""}catch(e){}
+$("mat").oninput=()=>{try{localStorage.setItem("mat",$("mat").value)}catch(e){}};const mat=()=>$("mat").value.replace(/\D/g,"");
+
+let AC;function beep(ok){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=ok?"sine":"square";o.frequency.value=ok?880:180;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(ok?.15:.4));navigator.vibrate&&navigator.vibrate(ok?60:[120,60,120])}catch(e){}}
+
+const MENU=[["dash","📊","Dashboard"],["mapa","🗺️","Mapa do Pátio"],["receb","📷","Recebimento"],["mapa","🅰️","Frente Ateliê","Frente Ateliê"],["mapa","🚿","Frente Ducha","Frente Ducha"],["mapa","⭐","ECON","ECON"],["cons","🔎","Consulta"],["receb","🔁","Movimentação"],["camp","📋","Campanhas"],["hist","🕘","Histórico"],["adm","⚙️","Administração"]];
+$("nav").innerHTML=MENU.map((m,i)=>`<button data-i="${i}"><span>${m[1]}</span><span class="t">${m[2]}</span></button>`).join("");
+$("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=MENU[b.dataset.i];if(m[0]==="camp"){location.href="./index.html";return}go(m[0],m[3],b.dataset.i)};
+$("burger").onclick=()=>{$("nav").classList.toggle("c");$("nav").classList.toggle("open")};if(innerWidth<700)$("nav").classList.add("c");
+function go(v,f,i){view=v;filtro=f||"";["dash","mapa","receb","cons","hist","adm"].forEach(x=>$("v-"+x).classList.toggle("hide",x!==v));
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.i===String(i??MENU.findIndex(m=>m[0]===v))));stopScan();render()}
+
+async function post(b){
+ if(!/^https:\/\/script\.google\.com\//.test(API_URL))throw new Error("API_URL não configurada");
+ const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(b)});
+ const j=await r.json();if(!j.ok){beep(0);throw new Error(j.error||"erro")}beep(1);await load();return j}
+async function load(){
+ if(!/^https:\/\/script\.google\.com\//.test(API_URL)){$("sync").textContent="Configure a API_URL";$("sync").className="er";return}
+ try{const j=await(await fetch(API_URL)).json();if(!j.layout)throw new Error("Code.gs desatualizado");
+  L=j.layout;cars={};j.cars.forEach(c=>cars[c.vis]=c);checks=j.checks||[];hist=j.hist||[];P={};O={};
+  j.patio.filter(r=>r.status==="no_patio").forEach(r=>{P[r.vis]=r;O[r.setor+"|"+r.vaga]=r});
+  $("sync").textContent="● Online · sincronizado "+new Date().toLocaleTimeString("pt-BR",{timeStyle:"short"});$("sync").className="";
+  if(!booted){booted=true;go("dash")}else render();
+ }catch(e){$("sync").textContent="● Sem conexão / "+e.message;$("sync").className="er"}}
+
+const pre=s=>s==="ECON"?"E":"F";
+const filas=s=>{const l=L.find(x=>x.setor===s);return l?[...Array(l.filas)].map((_,f)=>[...Array(l.vagas)].map((_,i)=>pre(s)+(f+1)+LET[i])):[]};
+const cap=s=>filas(s).flat().length;
+function cls(s,v){const o=O[s+"|"+v];if(!o)return"v";const c=cars[o.vis];return"v "+(c&&c.status==="pendente"?"p":c&&c.status==="last_mile"?"k":"o")}
+const cell=(s,v,extra)=>{const o=O[s+"|"+v];return `<button class="${cls(s,v)}${s==="ECON"?" e":""}${extra||""}" data-s="${esc(s)}" data-v="${v}"><b>${v}</b>${o?esc(o.vis.slice(-6)):"livre"}</button>`};
+
+function render(){({dash,mapa,receb,cons,hist:histR,adm:adm}[view]||(()=>{}))()}
+function dash(){
+ const vs=Object.values(P),n=s=>vs.filter(r=>r.setor===s).length,all=SET.reduce((a,s)=>a+cap(s),0);
+ const st=k=>vs.filter(r=>(cars[r.vis]||{}).status===k).length;
+ const pend=vs.filter(r=>split((cars[r.vis]||{}).pendencias).length).length;
+ const ep=vs.filter(r=>r.econ==="SIM"&&!["last_mile","liberado"].includes((cars[r.vis]||{}).status)).length;
+ const K=[[vs.length,"Total no pátio"],[n("Frente Ateliê"),"Frente Ateliê"],[n("Frente Ducha"),"Frente Ducha"],[n("ECON"),"ECON"],[all-vs.length,"Vagas livres"],[vs.length,"Vagas ocupadas"],[st("pendente"),"Aguardando atualização"],[st("em_atendimento"),"Em processo"],[st("last_mile"),"Finalizados"],[pend,"Com pendências"],[ep,"ECON pendentes"]];
+ const bar=(t,a,b)=>`<div class="mut">${esc(t)} · ${a}/${b}</div><div class="bar"><i style="width:${b?Math.round(a/b*100):0}%"></i></div>`;
+ $("v-dash").innerHTML=`<div class="kpis">${K.map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("")}</div>
+ <div class="card"><h2>Ocupação por setor</h2>${SET.map(s=>bar(s,n(s),cap(s))).join("")}</div>
+ <div class="card"><h2>Ocupação por fila</h2>${SET.map(s=>filas(s).map((f,i)=>bar(s+" · Fila "+(i+1),f.filter(v=>O[s+"|"+v]).length,f.length)).join("")).join("")}</div>
+ <div class="mut">Recebidos por turno, OK/NOK e relatórios entram na etapa 2.</div>`}
+function mapa(){
+ const ss=filtro?[filtro]:SET;
+ $("v-mapa").innerHTML=`<div class="card leg"><span><i style="background:var(--free)"></i>Livre</span><span><i style="background:#2f80c8"></i>Ocupada</span><span><i style="background:var(--wn)"></i>Pendência</span><span><i style="background:var(--ok)"></i>Finalizado</span><span><i style="border:2px solid var(--ecn)"></i>ECON</span></div>`+
+ ss.map(s=>`<div class="card"><h2>${esc(s)} · ${Object.values(P).filter(r=>r.setor===s).length}/${cap(s)}</h2>${filas(s).map((f,i)=>`<div class="fila"><b>Fila ${i+1}</b>${f.map(v=>cell(s,v)).join("")}</div>`).join("")||'<span class="mut">Sem filas configuradas.</span>'}</div>`).join("");
+ $("v-mapa").onclick=e=>{const b=e.target.closest(".v");if(!b)return;const o=O[b.dataset.s+"|"+b.dataset.v];
+  if(o)detail(o.vis);else{sel={setor:b.dataset.s,vaga:b.dataset.v};$("vis").value="";go("receb",null,2);}}}
+function detail(vis){const o=P[vis],c=cars[vis]||{};if(!o)return;
+ $("modal").classList.remove("hide");$("modal").innerHTML=`<div class="card"><h2>${esc(vis)}</h2>
+ <div class="row"><span>Local</span><b>${esc(o.setor)} · ${esc(o.vaga)}</b></div><div class="row"><span>Entrada</span><span>${fmt(o.entrada)} · mat. ${esc(o.operador)}</span></div>
+ <div class="row"><span>Status</span><span>${esc(ST[c.status]||"Sem registro em Campanhas")}</span></div>
+ <div class="row"><span>Campanha pendente</span><b class="er">${esc(split(c.pendencias).join(", ")||"—")}</b></div>${o.econ==="SIM"?'<div class="row"><span>Tipo</span><b>ECON</b></div>':""}
+ <div class="seg" style="margin-top:10px"><button class="btn" id="mMov">Movimentar</button><button class="btn r" id="mSai">Registrar saída</button><button class="btn" id="mFec">Fechar</button></div></div>`;
+ $("mFec").onclick=()=>$("modal").classList.add("hide");
+ $("mMov").onclick=()=>{$("modal").classList.add("hide");$("vis").value=vis;go("receb",null,2);upd()};
+ $("mSai").onclick=async()=>{if(!mat()){alert("Informe a matrícula.");return}if(!confirm("Registrar saída de "+vis+" do pátio?"))return;
+  try{await post({action:"saida",vis,matricula:mat()});$("modal").classList.add("hide")}catch(e){alert(e.message)}}}
+
+function receb(){
+ $("setSeg").innerHTML=SET.map(s=>`<button class="btn ${s===sel.setor?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("");
+ $("econBox").style.display=sel.setor==="ECON"?"block":"none";upd()}
+$("setSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;sel={setor:b.dataset.s,vaga:""};receb()};
+function upd(){const v=key($("vis").value),o=P[v];
+ $("recInfo").innerHTML=!v?"":o?`<b>${esc(v)}</b> já está em <b>${esc(o.setor)} ${esc(o.vaga)}</b>: confirmar fará a <b>movimentação</b>.`:`<b>${esc(v)}</b> · novo no pátio`+((cars[v]&&split(cars[v].pendencias).length)?` · <span class="er">Falta: ${esc(split(cars[v].pendencias).join(", "))}</span>`:"");
+ $("pick").innerHTML=filas(sel.setor).map((f,i)=>`<div class="fila"><b>Fila ${i+1}</b>${f.map(x=>{const oc=O[sel.setor+"|"+x];return oc&&oc.vis!==v?cell(sel.setor,x).replace('class="','class="').replace(">",' disabled>'):cell(sel.setor,x,x===sel.vaga?" s":"")}).join("")}</div>`).join("");
+ $("sum").innerHTML=`<div class="row"><span>VIS</span><b>${esc(v||"—")}</b></div><div class="row"><span>Setor</span><b>${esc(sel.setor)}</b></div><div class="row"><span>Vaga</span><b>${esc(sel.vaga||"—")}</b></div><div class="row"><span>Data/hora</span><span>${fmt(new Date())}</span></div><div class="row"><span>Operador</span><span>${esc(mat()||"—")}</span></div><div class="row"><span>Status</span><span>${o?"Movimentação":"Recebimento"}</span></div>`}
+$("pick").onclick=e=>{const b=e.target.closest(".v");if(!b||b.disabled)return;sel.vaga=b.dataset.v;upd()};
+$("vis").addEventListener("input",upd);$("vis").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("vis").value=key($("vis").value);upd()}});
+$("bOk").onclick=async()=>{if(busy)return;const v=key($("vis").value),m=$("msg");m.className="er";
+ if(!v){m.textContent="Informe o VIS.";beep(0);return}if(!mat()){m.textContent="Informe a matrícula.";beep(0);return}if(!sel.vaga){m.textContent="Escolha a vaga.";beep(0);return}
+ const mover=!!P[v],econ=sel.setor==="ECON"&&$("econ").checked;let p="";
+ if(sel.setor==="ECON"&&!(mover?P[v].econ==="SIM":econ)){p=prompt("Veículo comum em vaga ECON. Digite o PIN do administrador:")||"";if(!p)return}
+ busy=true;try{await post({action:mover?"mover":"alocar",vis:v,matricula:mat(),setor:sel.setor,vaga:sel.vaga,econ,pin:p});
+  m.className="ok";m.textContent=`VEÍCULO REGISTRADO COM SUCESSO · ${v} · ${sel.setor} ${sel.vaga} · ${fmt(new Date())}`;$("vis").value="";sel.vaga="";upd()}
+ catch(err){m.textContent=err.message}busy=false};
+
+async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide")}
+$("bCam").onclick=async()=>{if(scanner){await stopScan();return}if(!window.Html5Qrcode){alert("Câmera indisponível. Digite o VIS.");return}
+ $("reader").classList.remove("hide");scanner=new Html5Qrcode("reader");
+ try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async t=>{$("vis").value=key(t);beep(1);await stopScan();upd()},()=>{})}
+ catch(e){await stopScan();beep(0);alert("Não foi possível abrir a câmera. Digite o VIS manualmente.")}};
+
+function cons(){const q=key($("q").value);if(!q){$("qOut").innerHTML='<div class="card mut">Digite um VIS para localizar o veículo.</div>';return}
+ const vs=[...new Set([...Object.keys(P),...Object.keys(cars)])].filter(v=>v.includes(q)).slice(0,10);
+ $("qOut").innerHTML=vs.map(v=>{const o=P[v],c=cars[v]||{};return `<div class="card"><h2>${esc(v)}</h2><div class="row"><span>Localização</span><b>${o?esc(o.setor+" · "+o.vaga):"Fora do pátio / sem vaga"}</b></div>
+ <div class="row"><span>Status</span><span>${esc(ST[c.status]||"Sem registro em Campanhas")}</span></div><div class="row"><span>Campanha pendente</span><b class="er">${esc(split(c.pendencias).join(", ")||"—")}</b></div>
+ ${checks.filter(x=>x.vis===v).slice(0,5).map(x=>`<div class="row"><span>${esc(x.itens)||"—"}</span><span class="mut">mat. ${esc(x.matricula)} · ${fmt(x.ts)}</span></div>`).join("")}
+ ${o?`<button class="btn" style="width:100%;margin-top:8px" data-d="${esc(v)}">Movimentar / saída</button>`:""}</div>`}).join("")||'<div class="card mut">Nenhum veículo encontrado.</div>';
+ document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>detail(b.dataset.d))}
+$("q").oninput=cons;
+
+function histR(){const q=key($("hq").value),a=$("ha").value,ac=[...new Set(hist.map(h=>h.acao))];
+ if($("ha").options.length!==ac.length+1)$("ha").innerHTML='<option value="">Todas as ações</option>'+ac.map(x=>`<option>${esc(x)}</option>`).join("");
+ $("hOut").innerHTML=hist.filter(h=>(!q||h.vis.includes(q))&&(!a||h.acao===a)).map(h=>`<div class="row"><div><b>${esc(h.vis)}</b> · ${esc(h.acao)}<div class="mut">${esc(h.detalhe)} · mat. ${esc(h.matricula)}</div></div><span class="mut">${fmt(h.ts)}</span></div>`).join("")||'<span class="mut">Nenhum registro.</span>'}
+$("hq").oninput=histR;$("ha").onchange=histR;
+
+function adm(){if(!pin)return;
+ $("admBox").innerHTML=`<div class="card"><h2>Layout do pátio</h2><div class="mut">Filas de 1 a 30 e vagas por fila de 1 a 14 (A–N). Vagas: F1A… (Ateliê e Ducha) e E1A… (ECON). Reduzir a grade não apaga registros.</div>
+ ${L.map(l=>`<div class="row" style="align-items:end"><b style="min-width:110px">${esc(l.setor)}</b><div><label>Filas</label><input type="number" min="1" max="30" value="${l.filas}" id="f_${SET.indexOf(l.setor)}"></div><div><label>Vagas/fila</label><input type="number" min="1" max="14" value="${l.vagas}" id="g_${SET.indexOf(l.setor)}"></div><button class="btn" data-l="${esc(l.setor)}" data-n="${SET.indexOf(l.setor)}">Salvar</button></div>`).join("")}</div>
+ <div class="card"><h2>Campanhas</h2><div class="mut">Campanhas, locais e itens do checklist continuam na Administração do site Campanhas.</div></div>`;
+ document.querySelectorAll("[data-l]").forEach(b=>b.onclick=async()=>{try{await post({action:"layout",pin,setor:b.dataset.l,filas:$("f_"+b.dataset.n).value,vagas:$("g_"+b.dataset.n).value})}catch(e){alert(e.message)}})}
+$("bPin").onclick=()=>{pin=$("pin").value;if(!pin)return;$("login").classList.add("hide");$("admBox").classList.remove("hide");adm()};
+$("modal").onclick=e=>{if(e.target===$("modal"))$("modal").classList.add("hide")};
+load();setInterval(()=>{if(!document.hidden&&!busy&&!scanner)load()},10000);
+</script></body></html>
