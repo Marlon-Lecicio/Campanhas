@@ -60,6 +60,19 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
  <div class="g2"><div><label>De</label><input type="date" id="r1"></div><div><label>Até</label><input type="date" id="r2"></div></div>
  <div class="chips2" style="margin-top:10px"><button class="btn" data-x="csv">CSV</button><button class="btn" data-x="xlsx">Excel</button><button class="btn" data-x="pdf">PDF</button><button class="btn" data-x="print">Imprimir</button><button class="btn" data-x="ocup">Imprimir ocupação do pátio</button></div></div>
  <div class="card"><h2 id="rTit"></h2><div class="tw" id="rOut"></div></div></section>
+<section id="v-acoes" class="hide">
+ <div class="card"><h2>AÇÕES DE PÁTIO</h2><select id="acS"></select><div id="acCnt" class="mut" style="margin-top:6px"></div>
+  <label>VIS (bipe ou digite e confirme com Enter)</label><input id="acV" autocapitalize="characters" autocomplete="off">
+  <button class="btn" style="width:100%;margin-top:8px" id="acCam">📷 Ler VIS com a câmera</button><div id="acReader" class="hide" style="margin-top:8px"></div>
+  <div id="acCard"></div><div id="acMsg" style="margin-top:8px;font-weight:bold"></div></div>
+ <div class="card"><div class="seg"><button class="btn on" data-at="pend">Pendentes</button><button class="btn" data-at="feit">Feitos</button></div><input id="acQ" placeholder="Filtrar VIS" style="margin-top:8px"><div id="acL"></div></div>
+ <div class="card" id="acAdm" style="display:none"><h2>Gerenciar ações (administrador)</h2>
+  <div class="g2"><input id="acN" placeholder="Nome da nova ação"><input id="acD" placeholder="Descrição (opcional)"></div>
+  <label>Carros da ação (um VIS por linha)</label><textarea id="acT" rows="4" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--sec);background:var(--bg);color:var(--fg);font-size:15px"></textarea>
+  <label>Incluir também os veículos que estão no pátio</label><select id="acSet"><option value="">Nenhum</option><option value="ALL">Todos os setores</option><option>Frente Ateliê</option><option>Frente Ducha</option><option>ECON</option></select>
+  <div class="g2" style="margin-top:8px"><button class="btn g" id="acNew">Criar ação</button><button class="btn" id="acAdd">Adicionar à ação selecionada</button></div>
+  <button class="btn w" style="width:100%;margin-top:8px" id="acEnc">Encerrar / reativar ação selecionada</button><div id="acM2" class="er" style="margin-top:6px"></div></div>
+</section>
 <section id="v-adm" class="hide"></section>
 </main></div><div id="modal" class="hide"></div>
 <script>
@@ -78,12 +91,13 @@ const FIM=c=>c&&(c.status==="last_mile"||c.status==="liberado");
 let A=null,L=[],P={},O={},PA=[],cars={},checks=[],hist=[],param={},campCfg=[],scanner=null,sel={setor:SET[0],vaga:""},filtro="",view="dash",busy=false,booted=false,Q=[],F=[],off=false,rcur=null,tm=null;
 try{A=JSON.parse(sessionStorage.getItem("a")||"null")}catch(e){}
 try{Q=JSON.parse(localStorage.getItem("q")||"[]");F=JSON.parse(localStorage.getItem("f")||"[]")}catch(e){}
+let ACT=[],AVr=[],AVm={},acSel="",acTab="pend";
 const saveQ=()=>{try{localStorage.setItem("q",JSON.stringify(Q));localStorage.setItem("f",JSON.stringify(F))}catch(e){}};
 const R=()=>A?RK[A.perfil]||0:0,mat=()=>A?A.mat:"",uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 let AC;function beep(ok){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=ok?"sine":"square";o.frequency.value=ok?880:180;g.gain.value=.15;o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+(ok?.15:.4));navigator.vibrate&&navigator.vibrate(ok?60:[120,60,120])}catch(e){}}
 
 /* ---------- login / menu ---------- */
-const MENU=[["dash","📊","Dashboard","",2],["mapa","🗺️","Mapa do Pátio","",1],["receb","📷","Recebimento","",1],["mapa","🅰️","Frente Ateliê","Frente Ateliê",1],["mapa","🚿","Frente Ducha","Frente Ducha",1],["mapa","⭐","ECON","ECON",1],["cons","🔎","Consulta","",1],["receb","🔁","Movimentação","",1],["camp","📋","Campanhas","",1],["hist","🕘","Histórico","",2],["rel","📑","Relatórios","",2],["adm","⚙️","Administração","",3]];
+const MENU=[["dash","📊","Dashboard","",2],["mapa","🗺️","Mapa do Pátio","",1],["receb","📷","Recebimento","",1],["mapa","🅰️","Frente Ateliê","Frente Ateliê",1],["mapa","🚿","Frente Ducha","Frente Ducha",1],["mapa","⭐","ECON","ECON",1],["cons","🔎","Consulta","",1],["acoes","🛠️","Ações de Pátio","",1],["receb","🔁","Movimentação","",1],["camp","📋","Campanhas","",1],["hist","🕘","Histórico","",2],["rel","📑","Relatórios","",2],["adm","⚙️","Administração","",3]];
 function start(){$("lg").classList.add("hide");$("usr").textContent=A.nome+" · "+A.perfil+" · "+A.mat;
  $("nav").innerHTML=MENU.map((m,i)=>R()>=m[4]?`<button data-i="${i}"><span>${m[1]}</span><span class="t">${m[2]}</span></button>`:"").join("");
  booted=false;load();clearInterval(tm);tm=setInterval(()=>{if(!document.hidden&&!busy&&!scanner)load()},10000)}
@@ -94,7 +108,7 @@ $("lb").onclick=async()=>{const m=$("lm").value.replace(/\D/g,""),p=$("lp").valu
 $("out").onclick=()=>{if(Q.length&&!confirm(Q.length+" operação(ões) ainda não sincronizada(s). Sair mesmo assim?"))return;A=null;sessionStorage.removeItem("a");clearInterval(tm);$("lg").classList.remove("hide")};
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=MENU[b.dataset.i];if(m[0]==="camp"){location.href="./index.html";return}go(m[0],m[3],b.dataset.i)};
 $("burger").onclick=()=>{$("nav").classList.toggle("c");$("nav").classList.toggle("open")};if(innerWidth<700)$("nav").classList.add("c");
-function go(v,f,i){view=v;filtro=f||"";["dash","mapa","receb","cons","hist","rel","adm"].forEach(x=>$("v-"+x).classList.toggle("hide",x!==v));
+function go(v,f,i){view=v;filtro=f||"";["dash","mapa","receb","cons","acoes","hist","rel","adm"].forEach(x=>$("v-"+x).classList.toggle("hide",x!==v));
  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.i===String(i??MENU.findIndex(m=>m[0]===v))));stopScan();render()}
 
 /* ---------- rede, fila offline ---------- */
@@ -106,7 +120,7 @@ async function post(b,q){
  if(!j.ok){beep(0);throw new Error(j.error||"erro")}beep(1);await load();return j}
 async function flush(){while(Q.length&&A){const it=Q[0];let j;try{j=await call(it.body)}catch(e){return}
  if(!j.ok&&/PIN inválidos/.test(j.error||""))return;if(!j.ok)F.push({...it,error:j.error});Q.shift();saveQ()}}
-function applyQ(){Q.forEach(it=>{const b=it.body,v=key(b.vis),o=P[v];if(o)delete O[o.setor+"|"+o.vaga];if(b.action==="saida"){delete P[v];return}
+function applyQ(){Q.forEach(it=>{if(it.body.action==="acao_fazer"){const r=AVm[it.body.acaoId+"|"+key(it.body.vis)];if(r&&!r.resultado){r.resultado=it.body.resultado;r.feitoEm=it.ts;r.matricula=it.body.opMat}return}const b=it.body,v=key(b.vis),o=P[v];if(o)delete O[o.setor+"|"+o.vaga];if(b.action==="saida"){delete P[v];return}
  const r={vis:v,setor:b.setor,vaga:b.vaga,entrada:o?o.entrada:it.ts,operador:o?o.operador:b.opMat,status:"no_patio",econ:o?o.econ:(b.econ?"SIM":"NÃO")};P[v]=r;O[r.setor+"|"+r.vaga]=r})}
 function setSync(msg){const e=$("sync");let t,c="";
  if(Q.length){t="⏳ "+Q.length+" pendente(s) de sincronização";c="er"}else if(off){t="● Sem conexão"+(msg?" · "+msg:"");c="er"}else t="● Online · sincronizado "+new Date().toLocaleTimeString("pt-BR",{timeStyle:"short"});
@@ -116,7 +130,7 @@ $("sync").onclick=()=>{if(!F.length)return;$("modal").classList.remove("hide");$
 window.addEventListener("online",()=>load());
 async function load(){if(!A)return;
  try{await flush();const j=await(await fetch(API_URL)).json();if(!j.layout)throw new Error("Code.gs desatualizado");
-  L=j.layout;PA=j.patio;cars={};j.cars.forEach(c=>cars[c.vis]=c);checks=j.checks||[];hist=j.hist||[];param=j.param||{};campCfg=(j.config||{}).campanha||[];
+  L=j.layout;PA=j.patio;cars={};j.cars.forEach(c=>cars[c.vis]=c);checks=j.checks||[];hist=j.hist||[];param=j.param||{};ACT=j.acoes||[];AVr=j.acoesCarros||[];AVm={};AVr.forEach(r=>AVm[r.acaoId+"|"+r.vis]=r);campCfg=(j.config||{}).campanha||[];
   P={};O={};PA.filter(r=>r.status==="no_patio").forEach(r=>{P[r.vis]=r;O[r.setor+"|"+r.vaga]=r});applyQ();off=false;setSync();
   if(!booted){booted=true;go(R()>=2?"dash":"receb")}else render();
  }catch(e){off=true;setSync(e.message)}}
@@ -127,7 +141,7 @@ const filas=s=>{const l=L.find(x=>x.setor===s);return l?[...Array(l.filas)].map(
 const cap=s=>filas(s).flat().length;
 function cls(s,v){const o=O[s+"|"+v];if(!o)return"v";const c=cars[o.vis];return"v "+(c&&c.status==="pendente"?"p":FIM(c)?"k":"o")}
 const cell=(s,v,x)=>{const o=O[s+"|"+v];return `<button class="${cls(s,v)}${s==="ECON"?" e":""}${x||""}" data-s="${esc(s)}" data-v="${v}"><b>${v}</b>${o?esc(o.vis.slice(-6)):"livre"}</button>`};
-function render(){({dash,mapa,receb,cons,hist:histR,rel,adm}[view]||(()=>{}))()}
+function render(){({dash,mapa,receb,cons,acoes,hist:histR,rel,adm}[view]||(()=>{}))()}
 const TU=()=>[1,2,3].map(i=>(param["turno"+i]||"").match(/^(\d\d):(\d\d)-(\d\d):(\d\d)$/)).map((m,i)=>m?{n:(i+1)+"º Turno",a:+m[1]*60+ +m[2],b:+m[3]*60+ +m[4]}:null).filter(Boolean);
 function turno(ts){const d=new Date(ts),t=d.getHours()*60+d.getMinutes();for(const x of TU())if(x.a<=x.b?(t>=x.a&&t<x.b):(t>=x.a||t<x.b))return x.n;return"Fora de turno"}
 const ent=()=>hist.filter(h=>h.acao==="ENTRADA PÁTIO");
@@ -170,7 +184,7 @@ $("bOk").onclick=async()=>{if(busy)return;const v=key($("vis").value),m=$("msg")
  busy=true;try{const r=await post({action:mover?"mover":"alocar",vis:v,setor:sel.setor,vaga:sel.vaga,econ,pin:p},1);
   m.className="ok";m.textContent=(r.queued?"SALVO NO APARELHO (sincroniza ao voltar a conexão) · ":"VEÍCULO REGISTRADO COM SUCESSO · ")+`${v} · ${sel.setor} ${sel.vaga} · ${fmt(new Date())}`;$("vis").value="";sel.vaga="";upd()}
  catch(err){m.textContent=err.message}busy=false};
-async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide")}
+async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide");$("acReader").classList.add("hide")}
 $("bCam").onclick=async()=>{if(scanner){await stopScan();return}if(!window.Html5Qrcode){alert("Câmera indisponível. Digite o VIS.");return}
  $("reader").classList.remove("hide");scanner=new Html5Qrcode("reader");
  try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async t=>{$("vis").value=key(t);beep(1);await stopScan();upd()},()=>{})}
@@ -196,6 +210,7 @@ function histR(){fillSel("ht","Todos os turnos",[...TU().map(t=>t.n),"Fora de tu
 
 /* ---------- relatórios ---------- */
 const inR=ts=>{const d=iso(ts);return(!$("r1").value||d>=$("r1").value)&&(!$("r2").value||d<=$("r2").value)};
+const an=id=>(ACT.find(a=>a.id===id)||{}).nome||id;
 const loc=v=>P[v]?P[v].setor+" "+P[v].vaga:"Sem vaga";
 const RP=[
 ["dia","Veículos recebidos por dia",()=>{const m={};ent().filter(h=>inR(h.ts)).forEach(h=>{const k=iso(h.ts);m[k]=m[k]||[0,0];m[k][0]++;if(/\(ECON\)/.test(h.detalhe))m[k][1]++});return{c:["Data","Recebidos","ECON"],r:Object.keys(m).sort().map(k=>[k,...m[k]])}}],
@@ -208,6 +223,8 @@ const RP=[
 ["ok","Veículos OK (finalizados)",()=>({c:["VIS","Localização","Atualizado em"],r:Object.values(cars).filter(FIM).map(c=>[c.vis,loc(c.vis),fmt(c.atualizado)])})],
 ["nok","Veículos NOK (aguardando campanha)",()=>({c:["VIS","Localização","Campanhas pendentes","Atualizado em"],r:Object.values(cars).filter(c=>c.status==="pendente").map(c=>[c.vis,loc(c.vis),split(c.pendencias).join(", "),fmt(c.atualizado)])})],
 ["sv","Veículos sem vaga",()=>({c:["VIS","Status","Local (Campanhas)","Campanhas pendentes"],r:Object.values(cars).filter(c=>c.status!=="liberado"&&!P[c.vis]).map(c=>[c.vis,ST[c.status]||c.status,c.local,split(c.pendencias).join(", ")])})],
+["acp","Ações de pátio · pendentes",()=>({c:["Ação","VIS","Localização"],r:AVr.filter(r=>!r.resultado).map(r=>[an(r.acaoId),r.vis,loc(r.vis)])})],
+["acf","Ações de pátio · feitos",()=>({c:["Ação","VIS","Resultado","Data/hora","Matrícula"],r:AVr.filter(r=>r.resultado&&inR(r.feitoEm)).map(r=>[an(r.acaoId),r.vis,r.resultado,fmt(r.feitoEm),r.matricula])})],
 ["mov","Histórico de movimentação",()=>({c:["Data/hora","VIS","Ação","Detalhe","Operador"],r:hist.filter(h=>/PÁTIO|MOVIMENTA/.test(h.acao)&&inR(h.ts)).map(h=>[fmt(h.ts),h.vis,h.acao,h.detalhe,h.matricula])})]];
 function rel(){if(!$("rt").options.length)$("rt").innerHTML=RP.map(r=>`<option value="${r[0]}">${r[1]}</option>`).join("");
  const d=RP.find(r=>r[0]===$("rt").value)[2]();rcur={t:RP.find(r=>r[0]===$("rt").value)[1],...d};$("rTit").textContent=rcur.t+" · "+fmt(new Date());
@@ -218,6 +235,39 @@ document.querySelector("#v-rel").addEventListener("click",e=>{const b=e.target.c
  if(x==="csv"){const t="\ufeff"+[rcur.c,...rcur.r].map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(";")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv;charset=utf-8"}));a.download=nm+".csv";a.click();return}
  if(x==="xlsx"){if(!window.XLSX){alert("Biblioteca Excel não carregou (sem internet?).");return}const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([rcur.c,...rcur.r]),"Relatório");XLSX.writeFile(wb,nm+".xlsx");return}
  if(x==="pdf"){if(!window.jspdf){alert("Biblioteca PDF não carregou (sem internet?).");return}const d=new jspdf.jsPDF({orientation:"landscape"});d.text(rcur.t+" · "+fmt(new Date()),14,14);d.autoTable({head:[rcur.c],body:rcur.r.map(r=>r.map(String)),startY:20,styles:{fontSize:8}});d.save(nm+".pdf")}});
+
+/* ---------- ações de pátio ---------- */
+const RES=[["CARRO OK","g"],["CARRO NOK","r"],["NÃO VAGA","w"],["NÃO APLICA",""]];
+function acoes(){const vis=ACT.filter(a=>a.status!=="encerrada"||R()>=3),sig=JSON.stringify(vis.map(a=>[a.id,a.nome,a.status]));
+ if($("acS").dataset.s!==sig){$("acS").dataset.s=sig;$("acS").innerHTML=vis.map(a=>`<option value="${esc(a.id)}">${esc(a.nome)}${a.status==="encerrada"?" (encerrada)":""}</option>`).join("")||'<option value="">Nenhuma ação cadastrada</option>'}
+ if(!vis.find(a=>a.id===acSel))acSel=(vis[0]||{}).id||"";$("acS").value=acSel;
+ const rows=AVr.filter(r=>r.acaoId===acSel),pend=rows.filter(r=>!r.resultado),feit=rows.filter(r=>r.resultado),q=key($("acQ").value);
+ $("acCnt").innerHTML=`Pendentes <b>${pend.length}</b> · Feitos <b>${feit.length}</b>`+(feit.length?"<br>"+RES.map(x=>x[0]+": "+feit.filter(r=>r.resultado===x[0]).length).join(" · "):"");
+ const lst=(acTab==="pend"?pend:feit).filter(r=>!q||r.vis.includes(q)).slice(0,300);
+ $("acL").innerHTML=lst.map(r=>`<div class="row"><div><b>${esc(r.vis)}</b><div class="mut">${P[r.vis]?esc(P[r.vis].setor+" "+P[r.vis].vaga):"Sem vaga"}${r.resultado?" · <b>"+esc(r.resultado)+"</b> · "+fmt(r.feitoEm)+" · mat. "+esc(r.matricula):""}</div></div>${R()>=3?`<button class="btn sm" data-ad="${acTab==="pend"?"acao_rm":"acao_reabrir"}" data-v="${esc(r.vis)}">${acTab==="pend"?"Remover":"Reabrir"}</button>`:""}</div>`).join("")||'<div class="mut" style="margin-top:8px">Nenhum veículo.</div>';
+ $("acAdm").style.display=R()>=3?"block":"none"}
+function acLook(){const v=key($("acV").value),c=$("acCard");c.innerHTML="";$("acMsg").textContent="";if(!v||!acSel)return;const r=AVm[acSel+"|"+v];
+ if(!r){c.innerHTML=`<div class="er" style="margin-top:8px">O VIS ${esc(v)} não está na lista desta ação.</div>`;beep(0);return}
+ if(r.resultado){c.innerHTML=`<div class="er" style="margin-top:8px">Já registrado: <b>${esc(r.resultado)}</b> · ${fmt(r.feitoEm)} · mat. ${esc(r.matricula)}</div>`;beep(0);return}
+ beep(1);c.innerHTML=`<div class="card" style="margin:10px 0 0"><b>${esc(v)}</b><div class="mut">${P[v]?esc(P[v].setor+" · "+P[v].vaga):"Sem vaga no pátio"}</div><div class="mut" style="margin-top:6px">Escolha o resultado:</div><div class="g2" style="margin-top:6px">${RES.map(x=>`<button class="btn ${x[1]}" style="padding:18px 8px" data-r="${x[0]}">${x[0]}</button>`).join("")}</div></div>`;
+ c.querySelectorAll("[data-r]").forEach(b=>b.onclick=()=>acDo(v,b.dataset.r))}
+async function acDo(v,res){if(busy)return;busy=true;const m=$("acMsg");
+ try{const r=await post({action:"acao_fazer",acaoId:acSel,vis:v,resultado:res},1);$("acCard").innerHTML="";$("acV").value="";m.className="ok";m.textContent=(r.queued?"SALVO NO APARELHO · ":"REGISTRADO · ")+v+" → "+res;acoes();$("acV").focus()}
+ catch(e){m.className="er";m.textContent=e.message}busy=false}
+$("acS").onchange=()=>{acSel=$("acS").value;$("acCard").innerHTML="";acoes()};
+$("acV").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("acV").value=key($("acV").value);acLook()}});
+document.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>{acTab=b.dataset.at;document.querySelectorAll("[data-at]").forEach(x=>x.classList.toggle("on",x===b));acoes()});
+$("acQ").oninput=acoes;
+$("acCam").onclick=async()=>{if(scanner){await stopScan();return}if(!window.Html5Qrcode){alert("Câmera indisponível. Digite o VIS.");return}
+ $("acReader").classList.remove("hide");scanner=new Html5Qrcode("acReader");
+ try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async t=>{$("acV").value=key(t);await stopScan();acLook()},()=>{})}
+ catch(e){await stopScan();beep(0);alert("Não foi possível abrir a câmera. Digite o VIS manualmente.")}};
+const parseVis=()=>{const a=$("acT").value.split(/[\s,;]+/).map(key).filter(Boolean),t=$("acSet").value,x=t?Object.values(P).filter(p=>t==="ALL"||p.setor===t).map(p=>p.vis):[];return[...new Set([...a,...x])]};
+async function acAdm(b,after){try{$("acM2").textContent="";const j=await post(b);if(after)after(j)}catch(e){$("acM2").textContent=e.message}}
+$("acL").onclick=e=>{const b=e.target.closest("[data-ad]");if(!b||!confirm((b.dataset.ad==="acao_rm"?"Remover ":"Reabrir ")+b.dataset.v+"?"))return;acAdm({action:b.dataset.ad,acaoId:acSel,vis:b.dataset.v})};
+$("acNew").onclick=()=>{if(!$("acN").value.trim()){$("acM2").textContent="Informe o nome da ação.";return}acAdm({action:"acao_set",nome:$("acN").value,descricao:$("acD").value,vis:parseVis()},j=>{acSel=j.id;$("acN").value=$("acD").value=$("acT").value="";$("acSet").value="";$("acM2").textContent="";acoes()})};
+$("acAdd").onclick=()=>{if(!acSel){$("acM2").textContent="Selecione uma ação.";return}acAdm({action:"acao_set",id:acSel,vis:parseVis()},j=>{$("acT").value="";$("acSet").value="";alert(j.adicionados+" veículo(s) adicionado(s).")})};
+$("acEnc").onclick=()=>{const a=ACT.find(x=>x.id===acSel);if(!a)return;acAdm({action:"acao_set",id:acSel,ativa:a.status==="encerrada"})};
 
 /* ---------- administração ---------- */
 let users=[];
