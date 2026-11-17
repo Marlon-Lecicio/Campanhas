@@ -109,7 +109,7 @@ $("out").onclick=()=>{if(Q.length&&!confirm(Q.length+" operação(ões) ainda n�
 $("nav").onclick=e=>{const b=e.target.closest("button");if(!b)return;const m=MENU[b.dataset.i];if(m[0]==="camp"){location.href="./index.html";return}go(m[0],m[3],b.dataset.i)};
 $("burger").onclick=()=>{$("nav").classList.toggle("c");$("nav").classList.toggle("open")};if(innerWidth<700)$("nav").classList.add("c");
 function go(v,f,i){view=v;filtro=f||"";["dash","mapa","receb","cons","acoes","hist","rel","adm"].forEach(x=>$("v-"+x).classList.toggle("hide",x!==v));
- document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.i===String(i??MENU.findIndex(m=>m[0]===v))));stopScan();render()}
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.i===String(i??MENU.findIndex(m=>m[0]===v))));stopScan();if(v==="adm")$("v-adm").dataset.ok="";render()}
 
 /* ---------- rede, fila offline ---------- */
 const call=async b=>(await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...b,auth:{mat:A.mat,pin:A.pin}})})).json();
@@ -272,14 +272,15 @@ $("acEnc").onclick=()=>{const a=ACT.find(x=>x.id===acSel);if(!a)return;acAdm({ac
 /* ---------- administração ---------- */
 let users=[];
 async function adm(){if(R()<3){$("v-adm").innerHTML='<div class="card mut">Somente administradores.</div>';return}
+ if($("v-adm").dataset.ok==="1")return;$("v-adm").dataset.ok="1";
  try{users=(await call({action:"usr_list"})).users||[]}catch(e){users=[]}
  $("v-adm").innerHTML=`<div class="card"><h2>Usuários</h2>${users.map(u=>`<div class="row"><div><b>${esc(u.nome||u.matricula)}</b> · ${esc(u.perfil)}<div class="mut">mat. ${esc(u.matricula)} · ${u.ativo==="NÃO"?"inativo":"ativo"}</div></div><button class="btn sm" data-u="${esc(u.matricula)}">Editar</button></div>`).join("")||'<span class="mut">Nenhum usuário cadastrado.</span>'}
- <h2 style="margin-top:12px">Novo / editar usuário</h2><div class="g2"><input id="um" placeholder="Matrícula" inputmode="numeric"><input id="un" placeholder="Nome"><select id="up"><option>OPERADOR</option><option>LIDER</option><option>ADMIN</option></select><input id="ux" type="password" placeholder="PIN (4 a 8 dígitos)" inputmode="numeric"></div>
+ <h2 style="margin-top:12px">Novo / editar usuário</h2><div class="g2"><input id="um" placeholder="Matrícula" inputmode="numeric" autocomplete="off"><input id="un" placeholder="Nome" autocomplete="off"><select id="up"><option>OPERADOR</option><option>LIDER</option><option>ADMIN</option></select><input id="ux" type="password" placeholder="PIN (4 a 8 dígitos)" inputmode="numeric" autocomplete="new-password"></div>
  <label><input type="checkbox" id="ua" checked style="width:auto"> Ativo</label><button class="btn g" style="width:100%;margin-top:8px" id="us">Salvar usuário</button><div class="mut">Deixe o PIN em branco ao editar para mantê-lo. LIDER = Team Leader.</div></div>
  <div class="card"><h2>Layout do pátio</h2><div class="mut">Filas de 1 a 30 e vagas por fila de 1 a 14. Reduzir a grade não apaga registros.</div>
  ${L.map((l,i)=>`<div class="row" style="align-items:end"><b style="min-width:110px">${esc(l.setor)}</b><div><label>Filas</label><input type="number" min="1" max="30" value="${l.filas}" id="f_${i}"></div><div><label>Vagas/fila</label><input type="number" min="1" max="14" value="${l.vagas}" id="g_${i}"></div><button class="btn" data-l="${i}">Salvar</button></div>`).join("")}</div>
  <div class="card"><h2>Turnos (hh:mm-hh:mm)</h2>${[1,2,3].map(i=>`<div class="row" style="align-items:end"><b style="min-width:80px">${i}º turno</b><input id="t${i}" value="${esc(param["turno"+i]||"")}" placeholder="${i<3?"06:00-14:00":"opcional"}"><button class="btn" data-t="${i}">Salvar</button></div>`).join("")}</div><div id="am" class="er"></div>`;
- const run=async b=>{try{$("am").textContent="";await post(b)}catch(e){$("am").textContent=e.message}};
+ const run=async b=>{try{$("am").textContent="";await post(b);$("v-adm").dataset.ok="";adm()}catch(e){$("am").textContent=e.message}};
  document.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=users.find(x=>x.matricula===b.dataset.u);$("um").value=u.matricula;$("un").value=u.nome;$("up").value=u.perfil;$("ua").checked=u.ativo!=="NÃO";$("ux").value=""});
  $("us").onclick=()=>run({action:"usr_set",mat:$("um").value,nome:$("un").value,perfil:$("up").value,novoPin:$("ux").value,ativo:$("ua").checked});
  document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>run({action:"layout",setor:L[b.dataset.l].setor,filas:$("f_"+b.dataset.l).value,vagas:$("g_"+b.dataset.l).value}));
