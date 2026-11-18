@@ -50,8 +50,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:6px 8px;b
  <label>2. VIS (câmera ou digitação manual)</label><input id="vis" autocapitalize="characters" autocomplete="off" placeholder="Bipe ou digite o VIS">
  <button class="btn" style="width:100%;margin-top:8px" id="bCam">📷 Ler VIS com a câmera</button><div id="reader" class="hide" style="margin-top:8px"></div>
  <div id="recInfo" class="mut" style="margin-top:8px"></div>
+ <div id="modoBox" class="seg hide" style="margin-top:8px"><button class="btn r" data-m="saida">🚪 Saída do veículo</button><button class="btn" data-m="mover">🔁 Movimentar</button></div>
+ <div id="paisBox" class="hide"><label>País</label><div class="seg" id="paisSeg"></div></div>
+ <div id="saidaBox" class="card hide" style="margin:10px 0 0"><div id="sdInfo"></div><div id="sdOpts"><label style="color:var(--fg)"><input type="checkbox" id="sdOk" style="width:auto"> Atualizações completas (marca todas as campanhas faltantes como OK)</label><label style="color:var(--fg)"><input type="checkbox" id="sdAut" style="width:auto"> Saída autorizada (vai para o Last Mile sem atualizar as campanhas)</label></div></div>
  <label id="econBox" style="display:none"><input type="checkbox" id="econ" style="width:auto"> Veículo ECON (chegou direto da fábrica)</label>
- <label>3. Fila e vaga (toque na vaga livre)</label><div id="pick"></div><div class="card" style="margin:10px 0 0" id="sum"></div>
+ <div id="pickBox"><label>3. Fila e vaga (toque na vaga livre)</label><div id="pick"></div></div><div class="card" style="margin:10px 0 0" id="sum"></div>
  <button class="btn g" style="width:100%;margin-top:10px" id="bOk">✔ Confirmar registro</button><div id="msg"></div></div></section>
 <section id="v-cons" class="hide"><div class="card"><input id="q" placeholder="Buscar VIS…" autocapitalize="characters"></div><div id="qOut"></div></section>
 <section id="v-hist" class="hide"><div class="card"><div class="g2"><input id="hq" placeholder="VIS"><input id="ho" placeholder="Operador (matrícula)" inputmode="numeric"><div><label>De</label><input type="date" id="hd1"></div><div><label>Até</label><input type="date" id="hd2"></div>
@@ -149,46 +152,68 @@ const bar=(t,a,b,c)=>`<div class="mut">${esc(t)} · ${a}${b!=null?"/"+b:""}</div
 
 function dash(){const vs=Object.values(P),n=s=>vs.filter(r=>r.setor===s).length,all=SET.reduce((a,s)=>a+cap(s),0),st=k=>vs.filter(r=>(cars[r.vis]||{}).status===k).length;
  const hoje=iso(new Date()),eh=ent().filter(h=>iso(h.ts)===hoje),tn={};eh.forEach(h=>{const t=turno(h.ts);tn[t]=(tn[t]||0)+1});
- const ok=vs.filter(r=>FIM(cars[r.vis])).length,nok=st("pendente"),eRec=eh.filter(h=>/\(ECON\)/.test(h.detalhe)),eProc=eRec.filter(h=>FIM(cars[h.vis])).length;
+ const OKc=c=>FIM(c)&&!split(c.pendencias).length,ok=vs.filter(r=>OKc(cars[r.vis])).length,nok=vs.filter(r=>{const c=cars[r.vis];return c&&(c.status==="pendente"||(FIM(c)&&split(c.pendencias).length))}).length,eRec=eh.filter(h=>/\(ECON\)/.test(h.detalhe)),eProc=eRec.filter(h=>FIM(cars[h.vis])).length;
  const ep=vs.filter(r=>r.econ==="SIM"&&!FIM(cars[r.vis])).length,pend=vs.filter(r=>split((cars[r.vis]||{}).pendencias).length).length;
  const K=[[vs.length,"Total no pátio"],[n("Frente Ateliê"),"Frente Ateliê"],[n("Frente Ducha"),"Frente Ducha"],[n("ECON"),"ECON"],[all-vs.length,"Vagas livres"],[vs.length,"Vagas ocupadas"],[st("pendente"),"Aguardando atualização"],[st("em_atendimento"),"Em processo"],[st("last_mile"),"Finalizados"],[pend,"Com pendências"],[ep,"ECON pendentes"]];
  $("v-dash").innerHTML=`<div class="kpis">${K.map(k=>`<div class="kpi"><b>${k[0]}</b><span>${k[1]}</span></div>`).join("")}</div>
  <div class="g2"><div class="card"><h2>Ocupação por setor</h2>${SET.map(s=>bar(s,n(s),cap(s))).join("")}</div>
  <div class="card"><h2>Recebidos por turno (hoje)</h2>${Object.keys(tn).map(t=>bar(t,tn[t],eh.length)).join("")||'<span class="mut">Nenhuma entrada hoje.</span>'}</div>
  <div class="card"><h2>Veículos OK × NOK</h2>${bar("OK (finalizados)",ok,vs.length,"var(--ok)")}${bar("NOK (aguardando campanha)",nok,vs.length,"var(--wn)")}</div>
+ <div class="card"><h2>Veículos por país (no pátio)</h2>${[...PAISES,""].map(p=>bar(p||"Sem país",vs.filter(r=>((cars[r.vis]||{}).pais||"")===p).length,vs.length)).join("")}</div>
  <div class="card"><h2>ECON hoje</h2>${bar("Recebidos",eRec.length,eRec.length)}${bar("Processados",eProc,eRec.length,"var(--ok)")}</div></div>
  <div class="card"><h2>Ocupação por fila</h2>${SET.map(s=>filas(s).map((f,i)=>bar(s+" · Fila "+(i+1),f.filter(v=>O[s+"|"+v]).length,f.length)).join("")).join("")}</div>`}
 function mapa(){const ss=filtro?[filtro]:SET;
  $("v-mapa").innerHTML=`<div class="card leg"><span><i style="background:var(--free)"></i>Livre</span><span><i style="background:#2f80c8"></i>Ocupada</span><span><i style="background:var(--wn)"></i>Pendência</span><span><i style="background:var(--ok)"></i>Finalizado</span><span><i style="border:2px solid var(--ecn)"></i>ECON</span></div>`+
  ss.map(s=>`<div class="card"><h2>${esc(s)} · ${Object.values(P).filter(r=>r.setor===s).length}/${cap(s)}</h2>${filas(s).map((f,i)=>`<div class="fila"><b>Fila ${i+1}</b>${f.map(v=>cell(s,v)).join("")}</div>`).join("")||'<span class="mut">Sem filas configuradas.</span>'}</div>`).join("");
- $("v-mapa").onclick=e=>{const b=e.target.closest(".v");if(!b)return;const o=O[b.dataset.s+"|"+b.dataset.v];if(o)detail(o.vis);else{sel={setor:b.dataset.s,vaga:b.dataset.v};$("vis").value="";go("receb",null,2)}}}
+ $("v-mapa").onclick=e=>{const b=e.target.closest(".v");if(!b)return;const o=O[b.dataset.s+"|"+b.dataset.v];if(o)detail(o.vis);else{sel={setor:b.dataset.s,vaga:b.dataset.v};$("vis").value="";go("receb",null,2);$("vis").focus();if(!scanner)camToggle(true)}}}
 function detail(vis){const o=P[vis],c=cars[vis]||{};if(!o)return;$("modal").classList.remove("hide");
  $("modal").innerHTML=`<div class="card"><h2>${esc(vis)}</h2><div class="row"><span>Local</span><b>${esc(o.setor)} · ${esc(o.vaga)}</b></div><div class="row"><span>Entrada</span><span>${fmt(o.entrada)} · mat. ${esc(o.operador)}</span></div>
  <div class="row"><span>Status</span><span>${esc(ST[c.status]||"Sem registro em Campanhas")}</span></div><div class="row"><span>Campanha pendente</span><b class="er">${esc(split(c.pendencias).join(", ")||"—")}</b></div>${o.econ==="SIM"?'<div class="row"><span>Tipo</span><b>ECON</b></div>':""}
- <div class="seg" style="margin-top:10px"><button class="btn" id="mMov">Movimentar</button>${R()>=2?'<button class="btn r" id="mSai">Registrar saída</button>':""}<button class="btn" id="mFec">Fechar</button></div></div>`;
- $("mFec").onclick=()=>$("modal").classList.add("hide");$("mMov").onclick=()=>{$("modal").classList.add("hide");$("vis").value=vis;go("receb",null,2);upd()};
- if($("mSai"))$("mSai").onclick=async()=>{if(!confirm("Registrar saída de "+vis+" do pátio?"))return;try{await post({action:"saida",vis},1);$("modal").classList.add("hide")}catch(e){alert(e.message)}}}
-function receb(){$("setSeg").innerHTML=SET.map(s=>`<button class="btn ${s===sel.setor?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("");$("econBox").style.display=sel.setor==="ECON"?"block":"none";upd()}
+ <div class="seg" style="margin-top:10px"><button class="btn" id="mMov">Movimentar</button><button class="btn r" id="mSai">Registrar saída</button><button class="btn" id="mFec">Fechar</button></div></div>`;
+ $("mFec").onclick=()=>$("modal").classList.add("hide");$("mMov").onclick=()=>{$("modal").classList.add("hide");goModo(vis,"mover")};
+ $("mSai").onclick=()=>{$("modal").classList.add("hide");goModo(vis,"saida")}}
+const PAISES=["Brasil","Argentina","Chile"];let modo="novo",pais="",lastV="";
+const hd=(id,h)=>$(id).classList.toggle("hide",!!h);
+function receb(){$("setSeg").innerHTML=SET.map(s=>`<button class="btn ${s===sel.setor?"on":""}" data-s="${esc(s)}">${esc(s)}</button>`).join("");upd()}
 $("setSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;sel={setor:b.dataset.s,vaga:""};receb()};
-function upd(){const v=key($("vis").value),o=P[v];
- $("recInfo").innerHTML=!v?"":o?`<b>${esc(v)}</b> já está em <b>${esc(o.setor)} ${esc(o.vaga)}</b>: confirmar fará a <b>movimentação</b>.`:`<b>${esc(v)}</b> · novo no pátio`+((cars[v]&&split(cars[v].pendencias).length)?` · <span class="er">Falta: ${esc(split(cars[v].pendencias).join(", "))}</span>`:"");
+function goModo(v,m){$("vis").value=v;go("receb",null,2);lastV="";upd();modo=m;upd()}
+function upd(){const v=key($("vis").value),o=P[v],pend=split((cars[v]||{}).pendencias);
+ if(v!==lastV){lastV=v;modo=o?"":"novo";pais=(cars[v]||{}).pais||"";$("sdOk").checked=$("sdAut").checked=false}
+ $("recInfo").innerHTML=!v?"":o?`<b>${esc(v)}</b> já está em <b>${esc(o.setor)} ${esc(o.vaga)}</b>. Escolha o que fazer.`:`<b>${esc(v)}</b> · novo no pátio`+(pend.length?` · <span class="er">Falta: ${esc(pend.join(", "))}</span>`:"");
+ hd("modoBox",!(v&&o&&modo===""));hd("paisBox",!(v&&(modo==="novo"||modo==="mover")));hd("saidaBox",modo!=="saida");
+ hd("pickBox",!(modo==="novo"||modo==="mover"));hd("sum",!(modo==="novo"||modo==="mover"));
+ $("econBox").style.display=sel.setor==="ECON"&&modo==="novo"?"block":"none";
+ $("bOk").textContent=modo==="saida"?"✔ Confirmar saída":modo==="mover"?"✔ Confirmar movimentação":"✔ Confirmar registro";
+ $("paisSeg").innerHTML=PAISES.map(p=>`<button class="btn ${p===pais?"on":""}" data-p="${p}">${p}</button>`).join("");
+ $("sdInfo").innerHTML=pend.length?`<span class="er">Campanhas pendentes: <b>${esc(pend.join(", "))}</b></span>`:"Sem campanhas pendentes. Confirme a saída.";hd("sdOpts",!pend.length);
  $("pick").innerHTML=filas(sel.setor).map((f,i)=>`<div class="fila"><b>Fila ${i+1}</b>${f.map(x=>{const oc=O[sel.setor+"|"+x];return oc&&oc.vis!==v?cell(sel.setor,x).replace(">"," disabled>"):cell(sel.setor,x,x===sel.vaga?" s":"")}).join("")}</div>`).join("");
- $("sum").innerHTML=`<div class="row"><span>VIS</span><b>${esc(v||"—")}</b></div><div class="row"><span>Setor</span><b>${esc(sel.setor)}</b></div><div class="row"><span>Vaga</span><b>${esc(sel.vaga||"—")}</b></div><div class="row"><span>Data/hora</span><span>${fmt(new Date())}</span></div><div class="row"><span>Operador</span><span>${esc(mat())}</span></div><div class="row"><span>Status</span><span>${o?"Movimentação":"Recebimento"}</span></div>`}
+ $("sum").innerHTML=`<div class="row"><span>VIS</span><b>${esc(v||"—")}</b></div><div class="row"><span>País</span><b>${esc(pais||"—")}</b></div><div class="row"><span>Setor</span><b>${esc(sel.setor)}</b></div><div class="row"><span>Vaga</span><b>${esc(sel.vaga||"—")}</b></div><div class="row"><span>Data/hora</span><span>${fmt(new Date())}</span></div><div class="row"><span>Operador</span><span>${esc(mat())}</span></div><div class="row"><span>Status</span><span>${modo==="mover"?"Movimentação":"Recebimento"}</span></div>`}
 $("pick").onclick=e=>{const b=e.target.closest(".v");if(!b||b.disabled)return;sel.vaga=b.dataset.v;upd()};
+$("modoBox").onclick=e=>{const b=e.target.closest("button");if(!b)return;modo=b.dataset.m;upd()};
+$("paisSeg").onclick=e=>{const b=e.target.closest("button");if(!b)return;pais=b.dataset.p;upd()};
+$("sdOk").onchange=()=>{if($("sdOk").checked)$("sdAut").checked=false};$("sdAut").onchange=()=>{if($("sdAut").checked)$("sdOk").checked=false};
 $("vis").addEventListener("input",upd);$("vis").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("vis").value=key($("vis").value);upd()}});
 $("bOk").onclick=async()=>{if(busy)return;const v=key($("vis").value),m=$("msg");m.className="er";
- if(!v){m.textContent="Informe o VIS.";beep(0);return}if(!sel.vaga){m.textContent="Escolha a vaga.";beep(0);return}
+ if(!v){m.textContent="Informe o VIS.";beep(0);return}
+ if(P[v]&&modo===""){m.textContent="Escolha: saída do veículo ou movimentação.";beep(0);return}
+ if(modo==="saida"){const pend=split((cars[v]||{}).pendencias),ok=$("sdOk").checked,au=$("sdAut").checked;
+  if(pend.length&&!ok&&!au){m.textContent="Marque Atualizações completas ou Saída autorizada.";beep(0);return}
+  if(!confirm("Registrar a saída de "+v+" do pátio?"))return;
+  busy=true;try{const r=await post({action:"saida",vis:v,modo:ok?"completas":au?"autorizada":""},1);m.className="ok";m.textContent=(r.queued?"SALVO NO APARELHO · ":"SAÍDA REGISTRADA · ")+v+" · "+fmt(new Date());$("vis").value="";sel.vaga="";upd()}catch(err){m.textContent=err.message}busy=false;return}
+ if(!sel.vaga){m.textContent="Escolha a vaga.";beep(0);return}
+ if(modo==="novo"&&!pais){m.textContent="Selecione o país (Brasil, Argentina ou Chile).";beep(0);return}
  const mover=!!P[v],econ=sel.setor==="ECON"&&$("econ").checked;let p="";
  if(mover&&!confirm("Movimentar "+v+" de "+P[v].setor+" "+P[v].vaga+" para "+sel.setor+" "+sel.vaga+"?"))return;
  if(sel.setor==="ECON"&&A.perfil!=="ADMIN"&&!(mover?P[v].econ==="SIM":econ)){p=prompt("Veículo comum em vaga ECON. PIN do administrador:")||"";if(!p)return}
- busy=true;try{const r=await post({action:mover?"mover":"alocar",vis:v,setor:sel.setor,vaga:sel.vaga,econ,pin:p},1);
+ busy=true;try{const r=await post({action:mover?"mover":"alocar",vis:v,setor:sel.setor,vaga:sel.vaga,econ,pais,pin:p},1);
   m.className="ok";m.textContent=(r.queued?"SALVO NO APARELHO (sincroniza ao voltar a conexão) · ":"VEÍCULO REGISTRADO COM SUCESSO · ")+`${v} · ${sel.setor} ${sel.vaga} · ${fmt(new Date())}`;$("vis").value="";sel.vaga="";upd()}
  catch(err){m.textContent=err.message}busy=false};
 async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide");$("acReader").classList.add("hide")}
-$("bCam").onclick=async()=>{if(scanner){await stopScan();return}if(!window.Html5Qrcode){alert("Câmera indisponível. Digite o VIS.");return}
+async function camToggle(silent){if(scanner){await stopScan();return}if(!window.Html5Qrcode){if(!silent)alert("Câmera indisponível. Digite o VIS.");return}
  $("reader").classList.remove("hide");scanner=new Html5Qrcode("reader");
  try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:280,height:160}},async t=>{$("vis").value=key(t);beep(1);await stopScan();upd()},()=>{})}
- catch(e){await stopScan();beep(0);alert("Não foi possível abrir a câmera. Digite o VIS manualmente.")}};
+ catch(e){await stopScan();if(!silent){beep(0);alert("Não foi possível abrir a câmera. Digite o VIS manualmente.")}}}
+$("bCam").onclick=()=>camToggle(false);
 function cons(){const q=key($("q").value);if(!q){$("qOut").innerHTML='<div class="card mut">Digite um VIS para localizar o veículo.</div>';return}
  const vs=[...new Set([...Object.keys(P),...Object.keys(cars)])].filter(v=>v.includes(q)).slice(0,10);
  $("qOut").innerHTML=vs.map(v=>{const o=P[v],c=cars[v]||{};return `<div class="card"><h2>${esc(v)}</h2><div class="row"><span>Localização</span><b>${o?esc(o.setor+" · "+o.vaga):"Fora do pátio / sem vaga"}</b></div>
@@ -220,11 +245,14 @@ const RP=[
 ["camp","Veículos por campanha",()=>({c:["Campanha","VIS","Localização"],r:Object.values(cars).filter(c=>c.status==="pendente").flatMap(c=>split(c.pendencias).map(p=>[p,c.vis,loc(c.vis)])).sort((a,b)=>a[0].localeCompare(b[0]))})],
 ["econr","ECON recebidos",()=>({c:["VIS","Vaga","Recebimento","Operador","Situação"],r:PA.filter(p=>p.econ==="SIM"&&inR(p.entrada)).map(p=>[p.vis,p.vaga,fmt(p.entrada),p.operador,FIM(cars[p.vis])?"Finalizado":"Pendente"])})],
 ["econf","ECON finalizados",()=>({c:["VIS","Vaga","Recebimento","Finalizado em","Matrícula"],r:PA.filter(p=>p.econ==="SIM"&&inR(p.entrada)&&FIM(cars[p.vis])).map(p=>[p.vis,p.vaga,fmt(p.entrada),fmt(cars[p.vis].atualizado),cars[p.vis].matricula])})],
-["ok","Veículos OK (finalizados)",()=>({c:["VIS","Localização","Atualizado em"],r:Object.values(cars).filter(FIM).map(c=>[c.vis,loc(c.vis),fmt(c.atualizado)])})],
-["nok","Veículos NOK (aguardando campanha)",()=>({c:["VIS","Localização","Campanhas pendentes","Atualizado em"],r:Object.values(cars).filter(c=>c.status==="pendente").map(c=>[c.vis,loc(c.vis),split(c.pendencias).join(", "),fmt(c.atualizado)])})],
+["ok","Veículos OK (finalizados)",()=>({c:["VIS","Localização","Atualizado em"],r:Object.values(cars).filter(c=>FIM(c)&&!split(c.pendencias).length).map(c=>[c.vis,loc(c.vis),fmt(c.atualizado)])})],
+["nok","Veículos NOK (aguardando campanha ou saída autorizada)",()=>({c:["VIS","Localização","Campanhas pendentes","Atualizado em"],r:Object.values(cars).filter(c=>c.status==="pendente"||(FIM(c)&&split(c.pendencias).length)).map(c=>[c.vis,loc(c.vis),split(c.pendencias).join(", "),fmt(c.atualizado)])})],
 ["sv","Veículos sem vaga",()=>({c:["VIS","Status","Local (Campanhas)","Campanhas pendentes"],r:Object.values(cars).filter(c=>c.status!=="liberado"&&!P[c.vis]).map(c=>[c.vis,ST[c.status]||c.status,c.local,split(c.pendencias).join(", ")])})],
 ["acp","Ações de pátio · pendentes",()=>({c:["Ação","VIS","Localização"],r:AVr.filter(r=>!r.resultado).map(r=>[an(r.acaoId),r.vis,loc(r.vis)])})],
 ["acf","Ações de pátio · feitos",()=>({c:["Ação","VIS","Resultado","Data/hora","Matrícula"],r:AVr.filter(r=>r.resultado&&inR(r.feitoEm)).map(r=>[an(r.acaoId),r.vis,r.resultado,fmt(r.feitoEm),r.matricula])})],
+["pais","Entradas e saídas por país",()=>{const m={};[...PAISES,""].forEach(p=>m[p]=[0,0,0]);hist.filter(h=>inR(h.ts)).forEach(h=>{const p=h.pais||"";m[p]=m[p]||[0,0,0];if(h.acao==="ENTRADA PÁTIO")m[p][0]++;if(h.acao==="SAÍDA PÁTIO")m[p][1]++});Object.values(P).forEach(o=>{const p=(cars[o.vis]||{}).pais||"";m[p]=m[p]||[0,0,0];m[p][2]++});return{c:["País","Entradas","Saídas","No pátio agora"],r:Object.keys(m).map(p=>[p||"Sem país",...m[p]])}}],
+["atraso","Campanhas em atraso por país",()=>({c:["Campanha","País","VIS","Localização","Dias em atraso"],r:Object.values(cars).filter(c=>c.status==="pendente").flatMap(c=>split(c.pendencias).map(p=>[p,c.pais||"Sem país",c.vis,loc(c.vis),c.chegada?Math.max(0,Math.floor((Date.now()-new Date(c.chegada))/864e5)):""])).sort((a,b)=>(b[4]||0)-(a[4]||0))})],
+["destino","Locais por país",()=>{const m={},add=(l,p)=>{const k=l+"|"+(p||"Sem país");m[k]=(m[k]||0)+1};Object.values(P).forEach(o=>add(o.setor,(cars[o.vis]||{}).pais));Object.values(cars).filter(c=>c.status==="last_mile"&&!P[c.vis]).forEach(c=>add("Last Mile",c.pais));return{c:["Local","País","Quantidade"],r:Object.keys(m).sort().map(k=>[...k.split("|"),m[k]])}}],
 ["mov","Histórico de movimentação",()=>({c:["Data/hora","VIS","Ação","Detalhe","Operador"],r:hist.filter(h=>/PÁTIO|MOVIMENTA/.test(h.acao)&&inR(h.ts)).map(h=>[fmt(h.ts),h.vis,h.acao,h.detalhe,h.matricula])})]];
 function rel(){if(!$("rt").options.length)$("rt").innerHTML=RP.map(r=>`<option value="${r[0]}">${r[1]}</option>`).join("");
  const d=RP.find(r=>r[0]===$("rt").value)[2]();rcur={t:RP.find(r=>r[0]===$("rt").value)[1],...d};$("rTit").textContent=rcur.t+" · "+fmt(new Date());
@@ -276,11 +304,11 @@ async function adm(){if(R()<3){$("v-adm").innerHTML='<div class="card mut">Somen
  try{users=(await call({action:"usr_list"})).users||[]}catch(e){users=[]}
  $("v-adm").innerHTML=`<div class="card"><h2>Usuários</h2>${users.map(u=>`<div class="row"><div><b>${esc(u.nome||u.matricula)}</b> · ${esc(u.perfil)}<div class="mut">mat. ${esc(u.matricula)} · ${u.ativo==="NÃO"?"inativo":"ativo"}</div></div><button class="btn sm" data-u="${esc(u.matricula)}">Editar</button></div>`).join("")||'<span class="mut">Nenhum usuário cadastrado.</span>'}
  <h2 style="margin-top:12px">Novo / editar usuário</h2><div class="g2"><input id="um" placeholder="Matrícula" inputmode="numeric" autocomplete="off"><input id="un" placeholder="Nome" autocomplete="off"><select id="up"><option>OPERADOR</option><option>LIDER</option><option>ADMIN</option></select><input id="ux" type="password" placeholder="PIN (4 a 8 dígitos)" inputmode="numeric" autocomplete="new-password"></div>
- <label><input type="checkbox" id="ua" checked style="width:auto"> Ativo</label><button class="btn g" style="width:100%;margin-top:8px" id="us">Salvar usuário</button><div class="mut">Deixe o PIN em branco ao editar para mantê-lo. LIDER = Team Leader.</div></div>
+ <label><input type="checkbox" id="ua" checked style="width:auto"> Ativo</label><button class="btn g" style="width:100%;margin-top:8px" id="us">Salvar usuário</button><div class="mut">Deixe o PIN em branco ao editar para mantê-lo. LIDER = Team Leader.</div><div id="am" class="er" style="margin-top:8px;font-weight:bold"></div></div>
  <div class="card"><h2>Layout do pátio</h2><div class="mut">Filas de 1 a 30 e vagas por fila de 1 a 14. Reduzir a grade não apaga registros.</div>
  ${L.map((l,i)=>`<div class="row" style="align-items:end"><b style="min-width:110px">${esc(l.setor)}</b><div><label>Filas</label><input type="number" min="1" max="30" value="${l.filas}" id="f_${i}"></div><div><label>Vagas/fila</label><input type="number" min="1" max="14" value="${l.vagas}" id="g_${i}"></div><button class="btn" data-l="${i}">Salvar</button></div>`).join("")}</div>
- <div class="card"><h2>Turnos (hh:mm-hh:mm)</h2>${[1,2,3].map(i=>`<div class="row" style="align-items:end"><b style="min-width:80px">${i}º turno</b><input id="t${i}" value="${esc(param["turno"+i]||"")}" placeholder="${i<3?"06:00-14:00":"opcional"}"><button class="btn" data-t="${i}">Salvar</button></div>`).join("")}</div><div id="am" class="er"></div>`;
- const run=async b=>{try{$("am").textContent="";await post(b);$("v-adm").dataset.ok="";adm()}catch(e){$("am").textContent=e.message}};
+ <div class="card"><h2>Turnos (hh:mm-hh:mm)</h2>${[1,2,3].map(i=>`<div class="row" style="align-items:end"><b style="min-width:80px">${i}º turno</b><input id="t${i}" value="${esc(param["turno"+i]||"")}" placeholder="${i<3?"06:00-14:00":"opcional"}"><button class="btn" data-t="${i}">Salvar</button></div>`).join("")}</div>`;
+ const run=async b=>{try{$("am").textContent="";await post(b);$("v-adm").dataset.ok="";await adm();$("am").className="ok";$("am").textContent="Salvo com sucesso."}catch(e){$("am").className="er";$("am").textContent=e.message;alert(e.message)}};
  document.querySelectorAll("[data-u]").forEach(b=>b.onclick=()=>{const u=users.find(x=>x.matricula===b.dataset.u);$("um").value=u.matricula;$("un").value=u.nome;$("up").value=u.perfil;$("ua").checked=u.ativo!=="NÃO";$("ux").value=""});
  $("us").onclick=()=>run({action:"usr_set",mat:$("um").value,nome:$("un").value,perfil:$("up").value,novoPin:$("ux").value,ativo:$("ua").checked});
  document.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>run({action:"layout",setor:L[b.dataset.l].setor,filas:$("f_"+b.dataset.l).value,vagas:$("g_"+b.dataset.l).value}));
