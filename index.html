@@ -24,7 +24,6 @@ input,select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8p
 .tag{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:2px 7px;margin:2px;font-size:13px}.x{border:0;background:none;color:var(--warn);font-size:16px}
 </style></head><body>
 <h1>Campanhas · Ateliê</h1>
- <a href="obt.html" style="display:inline-block;margin:0 0 10px;padding:10px 14px;border-radius:8px;background:#1f4fd8;color:#fff;text-decoration:none;font-weight:bold">🚗 OBT CONTROL</a>
 <div class="mut" id="mode"></div>
 <div class="card"><label style="margin-top:0">Matrícula do colaborador</label><input id="mat" inputmode="numeric" placeholder="Ex.: 172632"></div>
 <div class="tabs"><button data-t="tri" class="on">Triagem</button><button data-t="chk">Checklist</button><button data-t="lst">Listas</button><button data-t="adm">Admin</button></div>
@@ -33,7 +32,7 @@ input,select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8p
 <section id="tri"><div class="card">
  <label style="margin-top:0">VIS (bipe ou digite)</label><input id="vis1" autocapitalize="characters" autocomplete="off">
  <button class="btn sec" data-cam="vis1">Ler com a câmera</button><div class="inf" id="inf1"></div>
- <label>Campanha que falta</label><div class="chips" id="cp"></div>
+ <label>País</label><div class="chips"><label><input type="radio" name="p1" value="Brasil">Brasil</label><label><input type="radio" name="p1" value="Argentina">Argentina</label><label><input type="radio" name="p1" value="Chile">Chile</label></div><label>Campanha que falta</label><div class="chips" id="cp"></div>
  <label>Local do carro</label><select id="loc"></select>
  <label class="chips" style="display:block"><span style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="keep" style="width:auto">Manter campanhas marcadas para o próximo carro</span></label>
  <button class="btn" id="bFalta">Registrar falta de campanha</button>
@@ -43,7 +42,7 @@ input,select{width:100%;padding:11px;border:1px solid var(--bd);border-radius:8p
 <section id="chk" class="hide"><div class="card">
  <label style="margin-top:0">VIS (bipe ou digite)</label><input id="vis2" autocapitalize="characters" autocomplete="off">
  <button class="btn sec" data-cam="vis2">Ler com a câmera</button><div class="inf" id="inf2"></div>
- <label>O que foi atualizado</label><div class="chips" id="ck"></div>
+ <label>País</label><div class="chips"><label><input type="radio" name="p2" value="Brasil">Brasil</label><label><input type="radio" name="p2" value="Argentina">Argentina</label><label><input type="radio" name="p2" value="Chile">Chile</label></div><label>O que foi atualizado</label><div class="chips" id="ck"></div>
  <label>Modelo</label><div class="chips"><label><input type="radio" name="mod" value="MID">MID</label><label><input type="radio" name="mod" value="HIGH">HIGH</label></div>
  <label class="chips" style="display:block"><span style="display:flex;gap:6px;align-items:center;font-size:14px"><input type="checkbox" id="fin" checked style="width:auto">Carro finalizado (enviar para LAST MILE)</span></label>
  <button class="btn" id="bChk">Salvar checklist</button><div id="msg2"></div>
@@ -95,10 +94,10 @@ async function load(){
  }catch(e){$("mode").textContent="Sem conexão com a planilha. Tentando de novo…"}}
 $("loc").onchange=()=>{try{localStorage.setItem("loc",$("loc").value)}catch(e){}};
 
-function info(i,o){const v=key($(i).value),c=cars[v];
+function info(i,o,rs){const v=key($(i).value),c=cars[v];document.querySelectorAll("input[name="+(i==="vis1"?"p1":"p2")+"]").forEach(x=>{if(c&&c.pais)x.checked=c.pais===x.value;else if(rs)x.checked=false});
  $(o).innerHTML=!v?"":!c?`<b>${esc(v)}</b> · carro novo (sem registro)`:
  `<b>${esc(v)}</b> · ${esc(ST[c.status]||c.status)}${split(c.pendencias).length?" · <span class='er'>Falta: "+esc(split(c.pendencias).join(", "))+"</span>":""}${c.local?" · "+esc(c.local):""}`}
-["vis1","vis2"].forEach((i,n)=>{const o=n?"inf2":"inf1";$(i).addEventListener("input",()=>info(i,o));
+["vis1","vis2"].forEach((i,n)=>{const o=n?"inf2":"inf1";$(i).addEventListener("input",()=>info(i,o,1));
  $(i).addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$(i).value=key($(i).value);info(i,o)}})});
 
 async function stopScan(){if(scanner){try{await scanner.stop();scanner.clear()}catch(e){}scanner=null}$("reader").classList.add("hide")}
@@ -107,14 +106,14 @@ document.querySelectorAll("[data-cam]").forEach(b=>b.onclick=async()=>{
  if(!window.Html5Qrcode){alert("Leitor de câmera indisponível. Digite o VIS.");return}
  tgt=b.dataset.cam;$("reader").classList.remove("hide");scanner=new Html5Qrcode("reader");
  try{await scanner.start({facingMode:"environment"},{fps:10,qrbox:{width:260,height:160}},async t=>{
-  $(tgt).value=key(t);await stopScan();info(tgt,tgt==="vis1"?"inf1":"inf2")},()=>{})}
+  $(tgt).value=key(t);await stopScan();info(tgt,tgt==="vis1"?"inf1":"inf2",1)},()=>{})}
  catch(e){await stopScan();alert("Não foi possível abrir a câmera. Digite o VIS ou use um leitor.")}});
 
 async function run(fn,m){if(busy)return;busy=true;try{await fn()}catch(e){msg(m,e.message,"er")}busy=false}
 function chk1(vis,m){if(!vis){msg(m,"Informe o VIS.","er");return 0}if(!mat()){msg(m,"Informe a matrícula.","er");return 0}return 1}
 $("bFalta").onclick=()=>run(async()=>{const v=key($("vis1").value),a=sel("cp");if(!chk1(v,"msg1"))return;
  if(!a.length){msg("msg1","Marque ao menos uma campanha que falta.","er");return}
- await post({action:"pend",vis:v,matricula:mat(),add:a,local:$("loc").value});
+ const pa=document.querySelector("input[name=p1]:checked");if(!pa&&!(cars[v]&&cars[v].pais)){msg("msg1","Selecione o país (Brasil, Argentina ou Chile).","er");return}await post({action:"pend",vis:v,matricula:mat(),add:a,local:$("loc").value,pais:pa?pa.value:""});document.querySelectorAll("input[name=p1]").forEach(x=>x.checked=false);
  msg("msg1",`${v}: falta ${a.join(", ")} · ${$("loc").value}`,"ok");$("vis1").value="";$("inf1").innerHTML="";
  if(!$("keep").checked)chips("cp",cfg.campanha);$("vis1").focus()},"msg1");
 $("bRes").onclick=()=>run(async()=>{const v=key($("vis1").value),a=sel("cp");if(!chk1(v,"msg1"))return;
@@ -124,7 +123,7 @@ $("bRes").onclick=()=>run(async()=>{const v=key($("vis1").value),a=sel("cp");if(
 $("bChk").onclick=()=>run(async()=>{const v=key($("vis2").value);if(!chk1(v,"msg2"))return;
  const it=sel("ck"),m=document.querySelector("input[name=mod]:checked");
  if(!it.length&&!m&&!$("fin").checked){msg("msg2","Marque o que foi atualizado.","er");return}
- await post({action:"check",vis:v,matricula:mat(),itens:it,modelo:m?m.value:"",finalizou:$("fin").checked});
+ await post({action:"check",vis:v,matricula:mat(),itens:it,modelo:m?m.value:"",finalizou:$("fin").checked,pais:(document.querySelector("input[name=p2]:checked")||{}).value||""});document.querySelectorAll("input[name=p2]").forEach(x=>x.checked=false);
  msg("msg2",`${v} salvo${$("fin").checked?" → LAST MILE":""}`,"ok");$("vis2").value="";$("inf2").innerHTML="";chips("ck",cfg.checklist);
  document.querySelectorAll("input[name=mod]").forEach(x=>x.checked=false);$("vis2").focus()},"msg2");
 
